@@ -18,4 +18,4 @@ before_script:
 
 script:
   # PHPUnit tests
-  - php vendor/bin/phpunit --configuration $CI_HOME/tests/phpunit.xml --coverage-text --verbose
+  - php vendor/bin/phpunit --configuration $TRAVIS_BUILD_DIR/tests/phpunit.xml --coverage-text --verbose
