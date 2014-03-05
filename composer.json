@@ -1,0 +1,43 @@
+{
+    "name": "naxel/zfctool",
+    "description": "Utility module for ZFCore2",
+    "keywords": [
+        "zf2",
+        "ZFCore2"
+    ],
+    "homepage": "https://github.com/naxel/ZFCTool",
+    "license": "BSD-3-Clause",
+    "repositories": [
+        {
+            "type": "composer",
+            "url": "https://packages.zendframework.com/"
+        }
+    ],
+    "autoload": {
+        "psr-0": {
+            "ZFCTool\\": "src/"
+        }
+    },
+    "require": {
+        "php": ">=5.3.3",
+        "zendframework/zend-code": ">=2.2.2",
+        "zendframework/zend-config": ">=2.2.2",
+        "zendframework/zend-console": ">=2.2.2",
+        "zendframework/zend-file": ">=2.2.2",
+        "zendframework/zend-form": ">=2.2.2",
+        "zendframework/zend-loader": ">=2.2.2",
+        "zendframework/zend-modulemanager": ">=2.2.2",
+        "zendframework/zend-mvc": ">=2.2.2",
+        "zendframework/zend-serializer": ">=2.2.2",
+        "zendframework/zend-servicemanager": ">=2.2.2",
+        "zendframework/zend-stdlib": ">=2.2.2",
+        "zendframework/zend-text": ">=2.2.2",
+        "zendframework/zend-version": ">=2.2.2",
+        "zendframework/zend-view": ">=2.2.2",
+        "zendframework/zend-db": ">=2.2.5"
+    },
+    "require-dev": {
+        "phpunit/phpunit": ">=3.7.20"
+    },
+    "bin": ["zfc.php"]
+}

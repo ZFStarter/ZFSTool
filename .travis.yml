@@ -1,0 +1,21 @@
+language: php
+
+php:
+  - 5.3
+  - 5.4
+  - 5.5
+  - hhvm
+
+env:
+  - APPLICATION_ENV="travis" DB="mysql"
+
+before_script:
+  # Composer
+  - wget -nc http://getcomposer.org/composer.phar
+  - php composer.phar install
+  # Database
+  - mysql -e 'CREATE DATABASE zfc2_tool_test;'
+
+script:
+  # PHPUnit tests
+  - php vendor/bin/phpunit --configuration tests/phpunit.xml --coverage-text --verbose
