@@ -19,10 +19,6 @@ use Zend\Db\Adapter\Driver\StatementInterface;
 use Zend\Db\Adapter\Adapter;
 use Zend\Db\Metadata\Metadata;
 
-use Zend\Console\Request as ConsoleRequest;
-use Zend\Console\Adapter\AdapterInterface as Console;
-use Zend\Console\ColorInterface as Color;
-
 use Zend\ServiceManager\ServiceLocatorInterface;
 
 use ZFCTool\Exception\ConflictedMigrationException;
@@ -37,7 +33,6 @@ use ZFCTool\Exception\IncorrectMigrationNameException;
 use ZFCTool\Exception\MigrationNotExistsException;
 
 use ZFCTool\Service\Migration\AbstractMigration;
-
 use ZFCTool\Service\Database\Diff;
 
 
@@ -56,13 +51,7 @@ class MigrationManager
     /**
      * @var \Zend\Db\Adapter\Adapter
      */
-    protected $_db;
-
-
-    /**
-     * @var Console
-     */
-    protected $console;
+    protected $db;
 
     /**
      * Variable contents options
@@ -85,7 +74,7 @@ class MigrationManager
      *
      * @var array
      */
-    protected $_messages = array();
+    protected $messages = array();
 
     /** @var  ServiceLocatorInterface */
     protected $serviceLocator;
@@ -110,13 +99,8 @@ class MigrationManager
 
         $this->options = array_merge($this->options, $config['ZFCTool']['migrations']);
 
-        $this->console = $this->serviceLocator->get('console');
-        if (!$this->console instanceof Console) {
-            throw new ZFCToolException('Cannot obtain console adapter. Are we running in a console?');
-        }
-
-        /** @var $_db Adapter */
-        $this->_db = $this->serviceLocator->get('Zend\Db\Adapter\Adapter');
+        /** @var $db Adapter */
+        $this->db = $this->serviceLocator->get('Zend\Db\Adapter\Adapter');
 
         $this->createTable();
     }
@@ -129,7 +113,7 @@ class MigrationManager
      */
     public function getMessages()
     {
-        return $this->_messages;
+        return $this->messages;
     }
 
 
@@ -138,7 +122,7 @@ class MigrationManager
      */
     public function addMessage($messages)
     {
-        array_push($this->_messages, $messages);
+        array_push($this->messages, $messages);
     }
 
 
@@ -197,7 +181,7 @@ class MigrationManager
     }
 
     /**
-     * Method return application directory path
+     * Method get migrations directory name
      *
      * @throws ZFCToolException
      * @return string
@@ -278,7 +262,7 @@ class MigrationManager
         ";
 
         /** @var $statement StatementInterface */
-        $statement = $this->_db->query($sql);
+        $statement = $this->db->query($sql);
         $statement->execute();
     }
 
@@ -409,7 +393,7 @@ class MigrationManager
      */
     public function getLoadedMigrations($module = null)
     {
-        $sql = new Sql($this->_db);
+        $sql = new Sql($this->db);
         $select = $sql->select()
             ->from($this->getMigrationsSchemaTable())
             ->order('migration ASC');
@@ -459,7 +443,7 @@ class MigrationManager
     {
         $lastMigration = $this->getLastMigration();
 
-        $sql = new Sql($this->_db);
+        $sql = new Sql($this->db);
         $select = $sql->select();
 
         $query = $select->from($this->options['migrationsSchemaTable']);
@@ -469,7 +453,7 @@ class MigrationManager
         $select->where($where);
 
         $selectString = $sql->getSqlStringForSqlObject($query);
-        $result = $this->_db->query($selectString, Adapter::QUERY_MODE_EXECUTE);
+        $result = $this->db->query($selectString, Adapter::QUERY_MODE_EXECUTE);
 
         if ($result && $result->current()) {
             return $result->current()->state;
@@ -489,7 +473,7 @@ class MigrationManager
     public function getLastMigration($module = null)
     {
         try {
-            $sql = new Sql($this->_db);
+            $sql = new Sql($this->db);
             $select = $sql->select();
             $select->from($this->getMigrationsSchemaTable())
                 ->order('id DESC')
@@ -586,7 +570,6 @@ class MigrationManager
     public function generateMigration($module = null, $blacklist = '', $whitelist = '', $showDiff = false,
                                       $label = '', $description = '')
     {
-
         $blkListedTables = array();
         $blkListedTables[] = $this->options['migrationsSchemaTable'];
         $blkListedTables = array_merge($blkListedTables, $this->_strToArray($blacklist));
@@ -601,13 +584,13 @@ class MigrationManager
             $options['whitelist'] = $whtListedTables;
         }
 
-        $currDb = new Database($this->_db, $options);
+        $currDb = new Database($this->db, $options);
 
-        $lastPublishedDb = new Database($this->_db, $options, false);
+        $lastPublishedDb = new Database($this->db, $options, false);
 
         $lastPublishedDb->fromString($this->getLastDbState());
 
-        $diff = new Diff($this->_db, $currDb, $lastPublishedDb);
+        $diff = new Diff($this->db, $currDb, $lastPublishedDb);
         $difference = $diff->getDifference();
 
         if (!count($difference['up']) && !count($difference['down'])) {
@@ -684,7 +667,7 @@ class MigrationManager
         }
 
         try {
-            $sql = new Sql($this->_db);
+            $sql = new Sql($this->db);
             $insert = $sql->insert($this->getMigrationsSchemaTable());
             $insert->values(
                 array(
@@ -693,7 +676,7 @@ class MigrationManager
                 )
             );
             $selectString = $sql->getSqlStringForSqlObject($insert);
-            $this->_db->query($selectString, Adapter::QUERY_MODE_EXECUTE);
+            $this->db->query($selectString, Adapter::QUERY_MODE_EXECUTE);
 
         } catch (\Exception $e) {
             // table is not exist
@@ -718,7 +701,7 @@ class MigrationManager
 
         try {
 
-            $sql = new Sql($this->_db);
+            $sql = new Sql($this->db);
             $delete = $sql->delete($this->getMigrationsSchemaTable());
             $delete->where(
                 array(
@@ -727,7 +710,7 @@ class MigrationManager
                 )
             );
             $selectString = $sql->getSqlStringForSqlObject($delete);
-            $this->_db->query($selectString, Adapter::QUERY_MODE_EXECUTE);
+            $this->db->query($selectString, Adapter::QUERY_MODE_EXECUTE);
 
         } catch (\Exception $e) {
             // table is not exist
@@ -793,7 +776,7 @@ class MigrationManager
                 $moduleAddon = ''; //((null !== $module) ? ucfirst($module) . '_' : '');
 
                 $migrationClass = $moduleAddon . 'Migration_' . $migration;
-                $migrationObject = new $migrationClass($this->_db);
+                $migrationObject = new $migrationClass($this->db);
                 /** @var AbstractMigration $migrationObject */
                 $migrationObject->setMigrationManager($this);
 
@@ -899,7 +882,7 @@ class MigrationManager
                 $migrationClass = $moduleAddon . 'Migration_' . $migration;
 
                 /** @var AbstractMigration $migrationObject */
-                $migrationObject = new $migrationClass($this->_db);
+                $migrationObject = new $migrationClass($this->db);
                 $migrationObject->setMigrationManager($this);
 
                 if (!$this->_transactionFlag) {
@@ -930,9 +913,9 @@ class MigrationManager
                 $this->_pushMigration($module, $migration);
 
                 // add db state to migration
-                $db = new Database($this->_db, array('blacklist' => $this->options['migrationsSchemaTable']));
+                $db = new Database($this->db, array('blacklist' => $this->options['migrationsSchemaTable']));
 
-                $sql = new Sql($this->_db);
+                $sql = new Sql($this->db);
                 $update = $sql->update($this->getMigrationsSchemaTable());
                 $where = new Where();
                 $where->equalTo('module', $module)
@@ -945,7 +928,7 @@ class MigrationManager
                     )
                 );
                 $selectString = $sql->getSqlStringForSqlObject($update);
-                $this->_db->query($selectString, Adapter::QUERY_MODE_EXECUTE);
+                $this->db->query($selectString, Adapter::QUERY_MODE_EXECUTE);
 
             } catch (\Exception $e) {
                 throw new ZFCToolException(
@@ -1000,7 +983,7 @@ class MigrationManager
 
                 $migrationClass = $moduleAddon . 'Migration_' . $migration;
                 /** @var AbstractMigration $migrationObject */
-                $migrationObject = new $migrationClass($this->_db);
+                $migrationObject = new $migrationClass($this->db);
 
                 $connection = $migrationObject->getDbAdapter()->getDriver()->getConnection();
                 $connection->beginTransaction();

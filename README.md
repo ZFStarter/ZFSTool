@@ -76,3 +76,24 @@
 # downgrade to selected migration from module with name <module>
 ~$ php vendor/bin/zfc.php down migration <module> <migration>
 ```
+
+#### Создание и импорт дампов
+
+```bash
+# общий синтаксис команды создания дампа:
+# create dump [<module>] [--module] [--name] [--whitelist] [--blacklist]
+# [<module>] - название модуля, в папке которого будет создан дамп,
+# если не указано, будет создан глобальный дамп в папке «dumps»
+# [--module] - альтернативный способ указания имени модуля
+# [--name] - название файла в который будет записан дамп,
+# по умолчанию название формируется на основе текущей даты
+# [--whitelist]/[--blacklist] - «белый»/«черный» список таблиц БД,
+# которые будут добавлены/исключены из дампа
+~$ php vendor/bin/zfc.php create dump --module=menu --name=menu_dump.sql --whitelist=menu
+
+# создание глобального дампа с именем в формате YYYYMMDD_HHIISS_SS.sql
+~$ php vendor/bin/zfc.php create dump
+
+# импорт уже созданного дампа
+~$ php vendor/bin/zfc.php import dump --module=menu --name=menu_dump.sql
+```

@@ -29,7 +29,7 @@ class MigrationManagerTest extends \PHPUnit_Framework_TestCase
     /**
      * @var MigrationManager
      */
-    protected $migrationManager;
+    protected $manager;
 
     /**
      * @var \Zend\Db\Adapter\Adapter
@@ -38,9 +38,15 @@ class MigrationManagerTest extends \PHPUnit_Framework_TestCase
 
     protected function setUp()
     {
-        /** @var $serviceManager \Zend\ServiceManager\ServiceManager */
-        $serviceManager = Bootstrap::getServiceManager();
-        $this->migrationManager = new MigrationManager($serviceManager);
+        try {
+            /** @var $serviceManager \Zend\ServiceManager\ServiceManager */
+            $serviceManager = Bootstrap::getServiceManager();
+            $this->manager = new MigrationManager($serviceManager);
+        } catch (\Exception $e) {
+            var_dump($e->getMessage());
+            exit;
+        }
+
         $this->db = $serviceManager->get('Zend\Db\Adapter\Adapter');
     }
 
@@ -56,177 +62,30 @@ class MigrationManagerTest extends \PHPUnit_Framework_TestCase
         }
 
         $this->db->query(
-            "DROP TABLE `" . $this->migrationManager->getMigrationsSchemaTable() . "`",
+            "DROP TABLE `" . $this->manager->getMigrationsSchemaTable() . "`",
             Adapter::QUERY_MODE_EXECUTE
         );
-    }
-
-    public function testFakeIncorrectMigrationNameException()
-    {
-        try {
-            $this->migrationManager->fake(null, 'fake');
-        } catch (IncorrectMigrationNameException $expected) {
-            $this->assertTrue(true);
-            return;
-        }
-        $this->fail('An expected Exception has not been raised.');
-    }
-
-    public function testFakeCurrentMigrationExceptions()
-    {
-        $this->migrationManager->up(null, '99999999_000000_00');
-
-        try {
-            $this->migrationManager->fake(null, '99999999_000000_00');
-        } catch (CurrentMigrationException $expected) {
-            $this->assertTrue(true);
-            return;
-        }
-        $this->fail('An expected Exception has not been raised.');
-    }
-
-    public function testFakeMigrationNotExistsExceptions()
-    {
-        try {
-            $this->migrationManager->fake(null, '12345678_000000_00');
-        } catch (MigrationNotExistsException $expected) {
-            $this->assertTrue(true);
-            return;
-        }
-        $this->fail('An expected Exception has not been raised.');
-    }
-
-    public function testFakeIncorrectMigrationName()
-    {
-        try {
-            $this->migrationManager->fake(null, null);
-        } catch (IncorrectMigrationNameException $expected) {
-            $this->assertTrue(true);
-            return;
-        }
-        $this->fail('An expected Exception has not been raised.');
-    }
-
-
-    public function testFakeMigrationExecutedException()
-    {
-        $this->migrationManager->up(null, '99999999_000000_01');
-        try {
-            $this->migrationManager->fake(null, '99999999_000000_00');
-        } catch (MigrationExecutedException $expected) {
-            $this->assertTrue(true);
-            return;
-        }
-        $this->fail('An expected Exception has not been raised.');
-    }
-
-    public function testFakeMigration()
-    {
-        $migrationManager = $this->migrationManager;
-
-        $migrations = $this->migrationManager->listMigrations();
-        $this->assertTrue(is_array($migrations));
-        $this->assertCount(5, $migrations);
-        $this->assertArrayHasKey('name', $migrations[0]);
-        $this->assertArrayHasKey('type', $migrations[0]);
-        $this->assertEquals($migrationManager::MIGRATION_TYPE_READY, $migrations[0]['type']);
-        $this->assertEquals('99999999_000000_00', $migrations[0]['name']);
-
-        $this->migrationManager->fake(null, '99999999_000000_00');
-
-        $migrations = $this->migrationManager->listMigrations();
-        $this->assertTrue(is_array($migrations));
-        $this->assertCount(5, $migrations);
-        $this->assertArrayHasKey('name', $migrations[0]);
-        $this->assertArrayHasKey('type', $migrations[0]);
-        $this->assertEquals($migrationManager::MIGRATION_TYPE_LOADED, $migrations[0]['type']);
-        $this->assertEquals('99999999_000000_00', $migrations[0]['name']);
-    }
-
-
-    public function testListMigrations()
-    {
-        $migrationManager = $this->migrationManager;
-        $migrations = $this->migrationManager->listMigrations();
-        $this->assertTrue(is_array($migrations));
-        $this->assertCount(5, $migrations);
-        $this->assertArrayHasKey('name', $migrations[0]);
-        $this->assertArrayHasKey('type', $migrations[0]);
-        $this->assertEquals($migrationManager::MIGRATION_TYPE_READY, $migrations[0]['type']);
-        $this->assertEquals('99999999_000000_00', $migrations[0]['name']);
-
-        $migrations = $this->migrationManager->listMigrations(self::FIXTURE_MODULE);
-        $this->assertTrue(is_array($migrations));
-        $this->assertCount(5, $migrations);
-        $this->assertArrayHasKey('name', $migrations[0]);
-        $this->assertArrayHasKey('type', $migrations[0]);
-        $this->assertEquals($migrationManager::MIGRATION_TYPE_READY, $migrations[0]['type']);
-        $this->assertEquals('99999999_100000_00', $migrations[0]['name']);
-
-        $this->migrationManager->up(self::FIXTURE_MODULE, '99999999_100000_00');
-
-        $migrations = $this->migrationManager->listMigrations(self::FIXTURE_MODULE);
-        $this->assertTrue(is_array($migrations));
-        $this->assertCount(5, $migrations);
-        $this->assertArrayHasKey('name', $migrations[0]);
-        $this->assertArrayHasKey('type', $migrations[0]);
-        $this->assertEquals($migrationManager::MIGRATION_TYPE_LOADED, $migrations[0]['type']);
-        $this->assertEquals('99999999_100000_00', $migrations[0]['name']);
-    }
-
-    public function testListTypeConflictMigrations()
-    {
-        $migrationManager = $this->migrationManager;
-        $migration = '99999999_000000_00';
-        $this->migrationManager->up(null, '99999999_000000_01');
-        $migrationTable = $this->migrationManager->getMigrationsSchemaTable();
-        $this->db->query(
-            'DELETE FROM `' . $migrationTable . '` WHERE `migration` = "' . $migration . '";',
-            Adapter::QUERY_MODE_EXECUTE
-        );
-        //Test migration not exist in DB, but exist from file system and have old name
-        $migrations = $this->migrationManager->listMigrations();
-        $this->assertTrue(is_array($migrations));
-        $this->assertEquals($migrationManager::MIGRATION_TYPE_CONFLICT, $migrations[0]['type']);
-    }
-
-    public function testListTypeNotExistMigrations()
-    {
-        $migrationManager = $this->migrationManager;
-        $migration = '99999999_000000_00';
-        $this->migrationManager->up(null, $migration);
-        $path = $this->migrationManager->getMigrationsDirectoryPath();
-        $migrationPath = $path . '/' . $migration . '.php';
-        $renamedMigrationPath = $path . '/' . $migration . '.php.moved';
-
-        rename($migrationPath, $renamedMigrationPath);
-        //Test migration exist in DB, but removed from file system
-        $migrations = $this->migrationManager->listMigrations();
-        $this->assertTrue(is_array($migrations));
-        $this->assertEquals($migrationManager::MIGRATION_TYPE_NOT_EXIST, $migrations[0]['type']);
-
-        rename($renamedMigrationPath, $migrationPath);
     }
 
     public function testSetModulesDirectoryPath()
     {
-        $this->migrationManager->setModulesDirectoryPath('/test/path');
-        $this->assertEquals('/test/path', $this->migrationManager->getModulesDirectoryPath());
+        $this->manager->setModulesDirectoryPath('/test/path');
+        $this->assertEquals('/test/path', $this->manager->getModulesDirectoryPath());
     }
 
 
     public function testSetProjectDirectoryPath()
     {
-        $this->migrationManager->setProjectDirectoryPath('/test/path');
-        $this->assertEquals('/test/path', $this->migrationManager->getProjectDirectoryPath());
+        $this->manager->setProjectDirectoryPath('/test/path');
+        $this->assertEquals('/test/path', $this->manager->getProjectDirectoryPath());
     }
 
 
     public function testGetProjectDirectoryPathExceptions()
     {
-        $this->migrationManager->setProjectDirectoryPath(null);
+        $this->manager->setProjectDirectoryPath(null);
         try {
-            $this->migrationManager->getProjectDirectoryPath();
+            $this->manager->getProjectDirectoryPath();
         } catch (ZFCToolException $expected) {
             $this->assertTrue(true);
             return;
@@ -237,9 +96,9 @@ class MigrationManagerTest extends \PHPUnit_Framework_TestCase
 
     public function testGetModulesDirectoryPathByModuleExceptions()
     {
-        $this->migrationManager->setModulesDirectoryPath(null);
+        $this->manager->setModulesDirectoryPath(null);
         try {
-            $this->migrationManager->getModulesDirectoryPath();
+            $this->manager->getModulesDirectoryPath();
         } catch (ZFCToolException $expected) {
             $this->assertTrue(true);
             return;
@@ -250,9 +109,9 @@ class MigrationManagerTest extends \PHPUnit_Framework_TestCase
 
     public function testGetMigrationsDirectoryNameExceptions()
     {
-        $this->migrationManager->setMigrationsDirectoryName(null);
+        $this->manager->setMigrationsDirectoryName(null);
         try {
-            $this->migrationManager->getMigrationsDirectoryName();
+            $this->manager->getMigrationsDirectoryName();
         } catch (ZFCToolException $expected) {
             $this->assertTrue(true);
             return;
@@ -264,7 +123,7 @@ class MigrationManagerTest extends \PHPUnit_Framework_TestCase
     public function testGetMigrationsDirectoryPathExceptions()
     {
         try {
-            $this->migrationManager->getMigrationsDirectoryPath('unknownModule');
+            $this->manager->getMigrationsDirectoryPath('unknownModule');
         } catch (ZFCToolException $expected) {
             $this->assertTrue(true);
             return;
@@ -272,10 +131,156 @@ class MigrationManagerTest extends \PHPUnit_Framework_TestCase
         $this->fail('An expected Exception has not been raised.');
     }
 
+    public function testFakeIncorrectMigrationNameException()
+    {
+        try {
+            $this->manager->fake(null, 'fake');
+        } catch (IncorrectMigrationNameException $expected) {
+            $this->assertTrue(true);
+            return;
+        }
+        $this->fail('An expected Exception has not been raised.');
+    }
+
+    public function testFakeCurrentMigrationExceptions()
+    {
+        $this->manager->up(null, '99999999_000000_00');
+
+        try {
+            $this->manager->fake(null, '99999999_000000_00');
+        } catch (CurrentMigrationException $expected) {
+            $this->assertTrue(true);
+            return;
+        }
+        $this->fail('An expected Exception has not been raised.');
+    }
+
+    public function testFakeMigrationNotExistsExceptions()
+    {
+        try {
+            $this->manager->fake(null, '12345678_000000_00');
+        } catch (MigrationNotExistsException $expected) {
+            $this->assertTrue(true);
+            return;
+        }
+        $this->fail('An expected Exception has not been raised.');
+    }
+
+    public function testFakeIncorrectMigrationName()
+    {
+        try {
+            $this->manager->fake(null, null);
+        } catch (IncorrectMigrationNameException $expected) {
+            $this->assertTrue(true);
+            return;
+        }
+        $this->fail('An expected Exception has not been raised.');
+    }
+
+
+    public function testFakeMigrationExecutedException()
+    {
+        $this->manager->up(null, '99999999_000000_01');
+        try {
+            $this->manager->fake(null, '99999999_000000_00');
+        } catch (MigrationExecutedException $expected) {
+            $this->assertTrue(true);
+            return;
+        }
+        $this->fail('An expected Exception has not been raised.');
+    }
+
+    public function testFakeMigration()
+    {
+        $manager = $this->manager;
+
+        $migrations = $this->manager->listMigrations();
+        $this->assertTrue(is_array($migrations));
+        $this->assertCount(5, $migrations);
+        $this->assertArrayHasKey('name', $migrations[0]);
+        $this->assertArrayHasKey('type', $migrations[0]);
+        $this->assertEquals($manager::MIGRATION_TYPE_READY, $migrations[0]['type']);
+        $this->assertEquals('99999999_000000_00', $migrations[0]['name']);
+
+        $this->manager->fake(null, '99999999_000000_00');
+
+        $migrations = $this->manager->listMigrations();
+        $this->assertTrue(is_array($migrations));
+        $this->assertCount(5, $migrations);
+        $this->assertArrayHasKey('name', $migrations[0]);
+        $this->assertArrayHasKey('type', $migrations[0]);
+        $this->assertEquals($manager::MIGRATION_TYPE_LOADED, $migrations[0]['type']);
+        $this->assertEquals('99999999_000000_00', $migrations[0]['name']);
+    }
+
+
+    public function testListMigrations()
+    {
+        $manager = $this->manager;
+        $migrations = $this->manager->listMigrations();
+        $this->assertTrue(is_array($migrations));
+        $this->assertCount(5, $migrations);
+        $this->assertArrayHasKey('name', $migrations[0]);
+        $this->assertArrayHasKey('type', $migrations[0]);
+        $this->assertEquals($manager::MIGRATION_TYPE_READY, $migrations[0]['type']);
+        $this->assertEquals('99999999_000000_00', $migrations[0]['name']);
+
+        $migrations = $this->manager->listMigrations(self::FIXTURE_MODULE);
+        $this->assertTrue(is_array($migrations));
+        $this->assertCount(5, $migrations);
+        $this->assertArrayHasKey('name', $migrations[0]);
+        $this->assertArrayHasKey('type', $migrations[0]);
+        $this->assertEquals($manager::MIGRATION_TYPE_READY, $migrations[0]['type']);
+        $this->assertEquals('99999999_100000_00', $migrations[0]['name']);
+
+        $this->manager->up(self::FIXTURE_MODULE, '99999999_100000_00');
+
+        $migrations = $this->manager->listMigrations(self::FIXTURE_MODULE);
+        $this->assertTrue(is_array($migrations));
+        $this->assertCount(5, $migrations);
+        $this->assertArrayHasKey('name', $migrations[0]);
+        $this->assertArrayHasKey('type', $migrations[0]);
+        $this->assertEquals($manager::MIGRATION_TYPE_LOADED, $migrations[0]['type']);
+        $this->assertEquals('99999999_100000_00', $migrations[0]['name']);
+    }
+
+    public function testListTypeConflictMigrations()
+    {
+        $manager = $this->manager;
+        $migration = '99999999_000000_00';
+        $this->manager->up(null, '99999999_000000_01');
+        $migrationTable = $this->manager->getMigrationsSchemaTable();
+        $this->db->query(
+            'DELETE FROM `' . $migrationTable . '` WHERE `migration` = "' . $migration . '";',
+            Adapter::QUERY_MODE_EXECUTE
+        );
+        //Test migration not exist in DB, but exist from file system and have old name
+        $migrations = $this->manager->listMigrations();
+        $this->assertTrue(is_array($migrations));
+        $this->assertEquals($manager::MIGRATION_TYPE_CONFLICT, $migrations[0]['type']);
+    }
+
+    public function testListTypeNotExistMigrations()
+    {
+        $manager = $this->manager;
+        $migration = '99999999_000000_00';
+        $this->manager->up(null, $migration);
+        $path = $this->manager->getMigrationsDirectoryPath();
+        $migrationPath = $path . '/' . $migration . '.php';
+        $renamedMigrationPath = $path . '/' . $migration . '.php.moved';
+
+        rename($migrationPath, $renamedMigrationPath);
+        //Test migration exist in DB, but removed from file system
+        $migrations = $this->manager->listMigrations();
+        $this->assertTrue(is_array($migrations));
+        $this->assertEquals($manager::MIGRATION_TYPE_NOT_EXIST, $migrations[0]['type']);
+
+        rename($renamedMigrationPath, $migrationPath);
+    }
 
     public function testCreate()
     {
-        $migrationPath = $this->migrationManager->create();
+        $migrationPath = $this->manager->create();
 
         if (is_file($migrationPath)) {
             $fileName = basename($migrationPath, '.php');
@@ -305,7 +310,7 @@ class MigrationManagerTest extends \PHPUnit_Framework_TestCase
                 'DROP TABLE IF EXISTS album'
             )
         );
-        $migrationPath = $this->migrationManager->create(null, $migrationBody);
+        $migrationPath = $this->manager->create(null, $migrationBody);
 
         if (is_file($migrationPath)) {
             $migrationFile = file_get_contents($migrationPath);
@@ -324,7 +329,7 @@ class MigrationManagerTest extends \PHPUnit_Framework_TestCase
      */
     public function testUpSuccess($module, $migration, $tableFilter, $expected)
     {
-        $this->migrationManager->up($module, $migration);
+        $this->manager->up($module, $migration);
 
         $result = $this->db->query("SHOW TABLES LIKE '" . $tableFilter . "';", Adapter::QUERY_MODE_EXECUTE);
 
@@ -363,7 +368,7 @@ class MigrationManagerTest extends \PHPUnit_Framework_TestCase
         $tableName = 'test_table';
 
         //Test empty diff
-        $result = $this->migrationManager->generateMigration(null, '', $tableName);
+        $result = $this->manager->generateMigration(null, '', $tableName);
         $this->assertFalse($result);
 
         $db = new Mysql($this->db);
@@ -372,7 +377,7 @@ class MigrationManagerTest extends \PHPUnit_Framework_TestCase
         $db->createColumn($tableName, 'col2', AbstractMigration::TYPE_VARCHAR, 50);
 
         //Test diff
-        $diff = $this->migrationManager->generateMigration(null, '', $tableName, true);
+        $diff = $this->manager->generateMigration(null, '', $tableName, true);
 
         $compareTo = array(
             'down' => array(Database::dropTable($tableName)),
@@ -385,7 +390,7 @@ class MigrationManagerTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals($compareTo, $diff);
 
         //Test create
-        $migrationPath = $this->migrationManager->generateMigration(null, '', $tableName);
+        $migrationPath = $this->manager->generateMigration(null, '', $tableName);
 
         $this->assertTrue(is_file($migrationPath));
 
@@ -404,10 +409,10 @@ class MigrationManagerTest extends \PHPUnit_Framework_TestCase
      */
     public function testUpExceptions($migration)
     {
-        $this->migrationManager->up();
+        $this->manager->up();
 
         try {
-            $this->migrationManager->up(null, $migration);
+            $this->manager->up(null, $migration);
         } catch (\Exception $expected) {
             $this->assertTrue(true);
             return;
@@ -419,9 +424,9 @@ class MigrationManagerTest extends \PHPUnit_Framework_TestCase
     public function testGetMessages()
     {
         $migration = '99999999_000000_00';
-        $this->migrationManager->up(null, $migration);
+        $this->manager->up(null, $migration);
 
-        $messages = $this->migrationManager->getMessages();
+        $messages = $this->manager->getMessages();
         $this->assertTrue(is_array($messages));
         $this->assertCount(1, $messages);
         $this->assertEquals("Upgrade to revision `$migration`", $messages[0]);
@@ -442,9 +447,9 @@ class MigrationManagerTest extends \PHPUnit_Framework_TestCase
 
     public function testDownIncorrectMigrationNameException()
     {
-        $this->migrationManager->up(null, '99999999_000000_00');
+        $this->manager->up(null, '99999999_000000_00');
         try {
-            $this->migrationManager->down(null, 'fake');
+            $this->manager->down(null, 'fake');
         } catch (IncorrectMigrationNameException $expected) {
             $this->assertTrue(true);
             return;
@@ -454,10 +459,10 @@ class MigrationManagerTest extends \PHPUnit_Framework_TestCase
 
     public function testDownCurrentMigrationExceptions()
     {
-        $this->migrationManager->up(null, '99999999_000000_00');
+        $this->manager->up(null, '99999999_000000_00');
 
         try {
-            $this->migrationManager->down(null, '99999999_000000_00');
+            $this->manager->down(null, '99999999_000000_00');
         } catch (CurrentMigrationException $expected) {
             $this->assertTrue(true);
             return;
@@ -468,10 +473,10 @@ class MigrationManagerTest extends \PHPUnit_Framework_TestCase
 
     public function testDownYoungMigrationException()
     {
-        $this->migrationManager->up(null, '99999999_000000_00');
+        $this->manager->up(null, '99999999_000000_00');
 
         try {
-            $this->migrationManager->down(null, '99999999_000000_01');
+            $this->manager->down(null, '99999999_000000_01');
         } catch (YoungMigrationException $expected) {
             $this->assertTrue(true);
             return;
@@ -483,7 +488,7 @@ class MigrationManagerTest extends \PHPUnit_Framework_TestCase
     public function testDownNoMigrationsForExecutionException()
     {
         try {
-            $this->migrationManager->down(null, '99999999_000000_00');
+            $this->manager->down(null, '99999999_000000_00');
         } catch (NoMigrationsForExecutionException $expected) {
             $this->assertTrue(true);
             return;
@@ -500,13 +505,13 @@ class MigrationManagerTest extends \PHPUnit_Framework_TestCase
      */
     public function testDownSuccess($module, $migration, $tableFilter, $expected)
     {
-        $this->migrationManager->up($module);
+        $this->manager->up($module);
 
         $result = $this->db->query("SHOW TABLES LIKE '" . $tableFilter . "';", Adapter::QUERY_MODE_EXECUTE);
 
         $this->assertEquals(5, $result->count());
 
-        $this->migrationManager->down($module, $migration);
+        $this->manager->down($module, $migration);
 
         $result = $this->db->query("SHOW TABLES LIKE '" . $tableFilter . "';", Adapter::QUERY_MODE_EXECUTE);
 
@@ -545,13 +550,13 @@ class MigrationManagerTest extends \PHPUnit_Framework_TestCase
      */
     public function testRollbackSuccess($module, $step, $tableFilter, $expected)
     {
-        $this->migrationManager->up($module);
+        $this->manager->up($module);
 
         $result = $this->db->query("SHOW TABLES LIKE '" . $tableFilter . "';", Adapter::QUERY_MODE_EXECUTE);
 
         $this->assertEquals(5, $result->count());
 
-        $this->migrationManager->rollback($module, $step);
+        $this->manager->rollback($module, $step);
 
         $result = $this->db->query("SHOW TABLES LIKE '" . $tableFilter . "';", Adapter::QUERY_MODE_EXECUTE);
 

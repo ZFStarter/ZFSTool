@@ -10,6 +10,10 @@ use Zend\Db\Adapter\Adapter;
 use Zend\Db\Metadata\Metadata;
 use ZFCTool\Service\Database\Diff;
 use Zend\Db\Adapter\Driver\StatementInterface;
+use Zend\Db\Sql\Sql;
+use Zend\Db\Sql\Where;
+use Zend\Db\Sql\Ddl;
+use Zend\Db\Sql\Ddl\Column;
 
 class Database
 {
@@ -18,42 +22,42 @@ class Database
      * array with schemes of tables
      * @var array
      */
-    protected $_scheme = array();
+    protected $scheme = array();
 
     /**
      * array with indexes of tables
      * @var array
      */
-    protected $_indexes = array();
+    protected $indexes = array();
 
     /**
      * @var array
      */
-    protected $_data = array();
+    protected $data = array();
 
     /**
      * array with ignored tables
      * @var array
      */
-    protected $_blackList = array();
+    protected $blackList = array();
 
     /**
      * array with "white listed" tables
      * @var array
      */
-    protected $_whiteList = array();
+    protected $whiteList = array();
 
     /**
      * @var Adapter
      */
-    protected $_db;
+    protected $db;
 
     protected static $defaultDb;
 
     /**
      * @var array
      */
-    protected $_options = array();
+    protected $options = array();
 
 
     /**
@@ -64,27 +68,27 @@ class Database
     public function __construct(Adapter $adapter, $options = null, $autoLoad = true)
     {
 
-        /** @var $_db Adapter */
-        $this->_db = $adapter;
+        /** @var $db Adapter */
+        $this->db = $adapter;
         self::$defaultDb = $adapter;
 
-        $this->_options = $options;
+        $this->options = $options;
 
 
         if (isset($options['blacklist']) && !isset($options['whitelist'])) {
 
             if (is_array($options['blacklist'])) {
-                $this->_blackList = $options['blacklist'];
+                $this->blackList = $options['blacklist'];
             } else {
-                $this->_blackList[] = (string)$options['blacklist'];
+                $this->blackList[] = (string)$options['blacklist'];
             }
 
         } elseif (isset($options['whitelist']) && !empty($options['whitelist'])) {
 
             if (is_array($options['whitelist'])) {
-                $this->_whiteList = $options['whitelist'];
+                $this->whiteList = $options['whitelist'];
             } else {
-                $this->_whiteList[] = (string)$options['whitelist'];
+                $this->whiteList[] = (string)$options['whitelist'];
             }
         }
 
@@ -108,17 +112,15 @@ class Database
     public function getDump()
     {
         $dump = '';
-
-        foreach ($this->_scheme as $tableName => $fields) {
+        foreach ($this->scheme as $tableName => $fields) {
 
             $dump .= self::dropTable($tableName) . ';' . PHP_EOL;
             $dump .= self::createTable($tableName) . ';' . PHP_EOL;
 
-            if (sizeof($this->_data[$tableName]) > 0)
-                foreach ($this->_data[$tableName] as $data) {
+            if (sizeof($this->data[$tableName]) > 0)
+                foreach ($this->data[$tableName] as $data) {
                     $dump .= self::insert($tableName, $data) . ';' . PHP_EOL;
                 }
-
         }
 
         return $dump;
@@ -135,7 +137,7 @@ class Database
     {
 
         $sql = "SHOW INDEXES FROM `{$table}`";
-        $indexesData = $this->_db->createStatement($sql)->execute();
+        $indexesData = $this->db->createStatement($sql)->execute();
         $indexes = array();
 
         foreach ($indexesData as $index) {
@@ -165,7 +167,7 @@ class Database
 
     protected function getConstraintForColumn($table, $colName)
     {
-        $rows = $this->_db->createStatement("select database() as dbname")->execute();
+        $rows = $this->db->createStatement("select database() as dbname")->execute();
         $row = $rows->current();
 
         $dbName = $row['dbname'];
@@ -183,7 +185,7 @@ class Database
             . "AND k.TABLE_NAME='$table' AND r.TABLE_NAME='$table' "
             . " AND t.TABLE_NAME='$table' AND k.COLUMN_NAME='$colName'";
 
-        $rows = $this->_db->createStatement($sql)->execute();
+        $rows = $this->db->createStatement($sql)->execute();
         $row = $rows->current();
 
         if (!count($row)) return false;
@@ -211,16 +213,14 @@ class Database
     public function addTable($tableName, $scheme)
     {
         if ($this->isTblWhiteListed($tableName) && !$this->isTblBlackListed($tableName)) {
-            $this->_scheme[$tableName] = $scheme;
+            $this->scheme[$tableName] = $scheme;
 
-            $this->_indexes[$tableName] = $this->getIndexListFromTable($tableName);
+            $this->indexes[$tableName] = $this->getIndexListFromTable($tableName);
 
-            if (isset($this->_options['loaddata']) && $this->_options['loaddata'] == true) {
+            if (isset($this->options['loaddata']) && $this->options['loaddata'] == true) {
 
-                $this->_data[$tableName] = $this->_db->fetchAll(
-                    $this->_db->select()->from($tableName)
-                );
-
+                $sql = new Sql($this->db);
+                $this->data[$tableName] = $sql->prepareStatementForSqlObject($sql->select($tableName))->execute();
             }
         }
     }
@@ -231,8 +231,8 @@ class Database
      */
     public function deleteTable($tableName)
     {
-        if (array_key_exists($tableName, $this->_scheme))
-            unset($this->_scheme[$tableName]);
+        if (array_key_exists($tableName, $this->scheme))
+            unset($this->scheme[$tableName]);
     }
 
     /**
@@ -242,8 +242,8 @@ class Database
      */
     protected function isTblWhiteListed($tableName)
     {
-        if (!empty($this->_whiteList)) {
-            return in_array($tableName, $this->_whiteList);
+        if (!empty($this->whiteList)) {
+            return in_array($tableName, $this->whiteList);
         }
         return true;
     }
@@ -255,8 +255,8 @@ class Database
      */
     protected function isTblBlackListed($tableName)
     {
-        if (!empty($this->_blackList)) {
-            return in_array($tableName, $this->_blackList);
+        if (!empty($this->blackList)) {
+            return in_array($tableName, $this->blackList);
         }
         return false;
 
@@ -269,7 +269,7 @@ class Database
     public function toString()
     {
         return json_encode(
-            array('data' => $this->_scheme, 'indexes' => $this->_indexes)
+            array('data' => $this->scheme, 'indexes' => $this->indexes)
         );
     }
 
@@ -284,27 +284,27 @@ class Database
 
             $dec = json_decode($jsonString, true);
 
-            $this->_indexes = $dec['indexes'];
+            $this->indexes = $dec['indexes'];
             $dec = $dec['data'];
 
-            if (!empty($this->_blackList))
-                foreach ($this->_blackList as $deleteKey) {
+            if (!empty($this->blackList))
+                foreach ($this->blackList as $deleteKey) {
                     if (array_key_exists($deleteKey, $dec)) {
                         unset($dec[$deleteKey]);
                     }
                 }
 
-            if (!empty($this->_whiteList))
+            if (!empty($this->whiteList))
                 foreach ($dec as $tblName => $table) {
-                    if (!in_array($tblName, $this->_whiteList)) {
+                    if (!in_array($tblName, $this->whiteList)) {
                         unset($dec[$tblName]);
                     }
                 }
 
-            $this->_scheme = $dec;
+            $this->scheme = $dec;
         } else {
-            $this->_scheme = array();
-            $this->_indexes = array();
+            $this->scheme = array();
+            $this->indexes = array();
         }
 
     }
@@ -315,7 +315,7 @@ class Database
      */
     public function getTables()
     {
-        return $this->_scheme;
+        return $this->scheme;
     }
 
     /**
@@ -325,8 +325,8 @@ class Database
      */
     public function getTableColumns($tableName)
     {
-        return (isset($this->_scheme[$tableName])) ?
-            $this->_scheme[$tableName] : false;
+        return (isset($this->scheme[$tableName])) ?
+            $this->scheme[$tableName] : false;
 
     }
 
@@ -337,8 +337,8 @@ class Database
      */
     public function getIndexList($tableName)
     {
-        if (array_key_exists($tableName, $this->_indexes))
-            return $this->_indexes[$tableName];
+        if (array_key_exists($tableName, $this->indexes))
+            return $this->indexes[$tableName];
         else
             return array();
     }

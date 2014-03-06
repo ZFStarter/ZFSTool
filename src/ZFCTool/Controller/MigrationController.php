@@ -14,27 +14,7 @@ use Zend\Console\Adapter\AdapterInterface as Console;
 use Zend\Console\ColorInterface as Color;
 use Zend\Console\Exception\RuntimeException;
 
-use Zend\Code\Generator\ClassGenerator;
-use Zend\Code\Generator\DocBlockGenerator;
-use Zend\Code\Generator\FileGenerator;
-use Zend\Code\Generator\MethodGenerator;
-
-use Zend\Db\Sql\Ddl;
-use Zend\Db\Sql\Sql;
-use Zend\Db\Adapter\Driver\StatementInterface;
-use Zend\Db\Adapter\Adapter;
-
-use ZFCTool\Exception\ConflictedMigrationException;
-use ZFCTool\Exception\MigrationExecutedException;
-use ZFCTool\Exception\MigrationNotLoadedException;
-use ZFCTool\Exception\NoMigrationsForExecutionException;
-use ZFCTool\Exception\OldMigrationException;
-use ZFCTool\Exception\YoungMigrationException;
 use ZFCTool\Exception\ZFCToolException;
-use ZFCTool\Exception\CurrentMigrationException;
-use ZFCTool\Exception\IncorrectMigrationNameException;
-use ZFCTool\Exception\MigrationNotExistsException;
-
 use ZFCTool\Service\MigrationManager;
 
 class MigrationController extends AbstractActionController
@@ -120,18 +100,10 @@ class MigrationController extends AbstractActionController
             $controller->setRequest($request);
 
             $controller->setConsole($console);
-            try {
-                /** @var MigrationManager $migrationManager */
-                $migrationManager = $controller->getServiceLocator()->get('MigrationManager');
-                $controller->setManager($migrationManager);
-            } catch (Exception $e) {
-                do {
-                    echo $e->getMessage();
-                } while ($e = $e->getPrevious);
-                exit;
-            }
 
-
+            /** @var MigrationManager $migrationManager */
+            $migrationManager = $controller->getServiceLocator()->get('MigrationManager');
+            $controller->setManager($migrationManager);
 
         }, 100); // execute before executing action logic
     }
@@ -369,6 +341,7 @@ class MigrationController extends AbstractActionController
             $this->console->writeLine($e->getMessage(), Color::RED);
         }
     }
+
 
     /**
      *

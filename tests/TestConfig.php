@@ -7,6 +7,7 @@ return array(
 		'config_glob_paths'    => array(
 			'../config/autoload/{,*.}{global,local}.php',
 			'test.config.php',
+            'travis.config.php',
 		),
 		'module_paths' => array(
 			'module',

@@ -10,7 +10,11 @@ return array(
             // Path to modules directory
             'modulesDirectoryPath' => 'module',
             // Migrations directory name
-            'migrationsDirectoryName' => 'migrations'
+            'migrationsDirectoryName' => 'migrations',
+        ),
+        'dumps' => array(
+            // Dumps directory name
+            'dumpsDirectoryName' => 'dumps'
         )
     ),
     // -----=-----=-----=-----=-----=-----=-----=-----=-----=-----=-----=-----=-----=-----=-----=-----=
@@ -18,6 +22,7 @@ return array(
     'controllers' => array(
         'invokables' => array(
             'ZFCTool\Controller\Migration' => 'ZFCTool\Controller\MigrationController',
+            'ZFCTool\Controller\Dump' => 'ZFCTool\Controller\DumpController',
         ),
     ),
 
@@ -26,7 +31,7 @@ return array(
             'routes' => array(
                 'listing-migration' => array(
                     'options' => array(
-                        'route' => 'listing migration [<module>]',
+                        'route' => 'listing migration [--module=]',
                         'defaults' => array(
                             'controller' => 'ZFCTool\Controller\Migration',
                             'action' => 'list'
@@ -35,7 +40,7 @@ return array(
                 ),
                 'create-migration' => array(
                     'options' => array(
-                        'route' => 'create migration [<module>]',
+                        'route' => 'create migration [--module=]',
                         'defaults' => array(
                             'controller' => 'ZFCTool\Controller\Migration',
                             'action' => 'create'
@@ -45,7 +50,7 @@ return array(
 
                 'generate-migration' => array(
                     'options' => array(
-                        'route' => 'generate migration [<module>]',
+                        'route' => 'generate migration [--module=]',
                         'defaults' => array(
                             'controller' => 'ZFCTool\Controller\Migration',
                             'action' => 'generate'
@@ -54,7 +59,7 @@ return array(
                 ),
                 'fake-migration' => array(
                     'options' => array(
-                        'route' => 'fake migration [<module>] [<to>]',
+                        'route' => 'fake migration [--module=] [--to=]',
                         'defaults' => array(
                             'controller' => 'ZFCTool\Controller\Migration',
                             'action' => 'fake'
@@ -63,7 +68,7 @@ return array(
                 ),
                 'down-migration' => array(
                     'options' => array(
-                        'route' => 'down migration [<to>] [<module>]',
+                        'route' => 'down migration [--to=] [--module=]',
                         'defaults' => array(
                             'controller' => 'ZFCTool\Controller\Migration',
                             'action' => 'down'
@@ -72,7 +77,7 @@ return array(
                 ),
                 'up-migration' => array(
                     'options' => array(
-                        'route' => 'up migration [<to>] [<module>]',
+                        'route' => 'up migration [--to=] [--module=]',
                         'defaults' => array(
                             'controller' => 'ZFCTool\Controller\Migration',
                             'action' => 'up'
@@ -81,7 +86,7 @@ return array(
                 ),
                 'current-migration' => array(
                     'options' => array(
-                        'route' => 'current migration [<module>]',
+                        'route' => 'current migration [--module=]',
                         'defaults' => array(
                             'controller' => 'ZFCTool\Controller\Migration',
                             'action' => 'current'
@@ -90,7 +95,7 @@ return array(
                 ),
                 'rollback-migration' => array(
                     'options' => array(
-                        'route' => 'rollback migration [<module>] [<step>]',
+                        'route' => 'rollback migration [--module=] [--step=]',
                         'defaults' => array(
                             'controller' => 'ZFCTool\Controller\Migration',
                             'action' => 'rollback'
@@ -99,10 +104,28 @@ return array(
                 ),
                 'diff-migration' => array(
                     'options' => array(
-                        'route' => 'diff migration [<blacklist>]',
+                        'route' => 'diff migration [--blacklist=]',
                         'defaults' => array(
                             'controller' => 'ZFCTool\Controller\Migration',
                             'action' => 'diff'
+                        )
+                    )
+                ),
+                'create-dump' => array(
+                    'options' => array(
+                        'route' => 'create dump [--module=] [--name=] [--whitelist=] [--blacklist=]',
+                        'defaults' => array(
+                            'controller' => 'ZFCTool\Controller\Dump',
+                            'action' => 'create'
+                        )
+                    )
+                ),
+                'import-dump' => array(
+                    'options' => array(
+                        'route' => 'import dump [--module=] [--name=]',
+                        'defaults' => array(
+                            'controller' => 'ZFCTool\Controller\Dump',
+                            'action' => 'import'
                         )
                     )
                 ),

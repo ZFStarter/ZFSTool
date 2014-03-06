@@ -15,6 +15,7 @@ class ModuleFactory implements AbstractFactoryInterface
 
     protected $provides = array(
         'MigrationManager' => 'ZFCTool\Service\MigrationManager',
+        'DumpManager' => 'ZFCTool\Service\DumpManager',
     );
 
     /**
