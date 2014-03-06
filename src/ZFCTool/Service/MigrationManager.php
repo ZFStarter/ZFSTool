@@ -727,7 +727,7 @@ class MigrationManager
      * @param string $to Migration name
      * @throws \ZFCTool\Exception\ZFCToolException
      */
-    public function down($module, $to)
+    public function down($module, $to = null)
     {
         $lastMigration = $this->getLastMigration($module);
         $lastMigration = $lastMigration['migration'];
@@ -831,7 +831,7 @@ class MigrationManager
      * @throws \ZFCTool\Exception\NoMigrationsForExecutionException
      * @throws \ZFCTool\Exception\CurrentMigrationException
      */
-    public function up($module = null, $to)
+    public function up($module = null, $to = null)
     {
         $lastMigration = $this->getLastMigration($module);
         $lastMigration = $lastMigration['migration'];
