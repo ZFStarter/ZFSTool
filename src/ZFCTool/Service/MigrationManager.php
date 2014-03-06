@@ -724,10 +724,10 @@ class MigrationManager
      * Method downgrade all migration or migrations to selected
      *
      * @param string $module Module name
-     * @param int $to Migration name
+     * @param string $to Migration name
      * @throws \ZFCTool\Exception\ZFCToolException
      */
-    public function down($module, $to = null)
+    public function down($module, $to)
     {
         $lastMigration = $this->getLastMigration($module);
         $lastMigration = $lastMigration['migration'];
@@ -821,7 +821,7 @@ class MigrationManager
      * Method upgrade all migration or migrations to selected
      *
      * @param string $module Module name
-     * @param string $to Migration name or label
+     * @param string $to Migration name
      *
      * @throws \ZFCTool\Exception\IncorrectMigrationNameException
      * @throws \ZFCTool\Exception\ConflictedMigrationException
@@ -831,7 +831,7 @@ class MigrationManager
      * @throws \ZFCTool\Exception\NoMigrationsForExecutionException
      * @throws \ZFCTool\Exception\CurrentMigrationException
      */
-    public function up($module = null, $to = null)
+    public function up($module = null, $to)
     {
         $lastMigration = $this->getLastMigration($module);
         $lastMigration = $lastMigration['migration'];

@@ -1,3 +1,8 @@
+
+То что тесты проходят успешно это ещё ни о чем не говорит (c)
+
+[![Build Status](https://travis-ci.org/naxel/ZFCTool.png?branch=master)](https://travis-ci.org/naxel/ZFCTool)
+
 #### Создание миграций
 
 ```bash

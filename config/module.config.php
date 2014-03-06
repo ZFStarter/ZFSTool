@@ -59,7 +59,7 @@ return array(
                 ),
                 'fake-migration' => array(
                     'options' => array(
-                        'route' => 'fake migration [--module=] [--to=]',
+                        'route' => 'fake migration <to> [--module=]',
                         'defaults' => array(
                             'controller' => 'ZFCTool\Controller\Migration',
                             'action' => 'fake'
@@ -68,7 +68,7 @@ return array(
                 ),
                 'down-migration' => array(
                     'options' => array(
-                        'route' => 'down migration [--to=] [--module=]',
+                        'route' => 'down migration <to> [--module=]',
                         'defaults' => array(
                             'controller' => 'ZFCTool\Controller\Migration',
                             'action' => 'down'
@@ -77,7 +77,7 @@ return array(
                 ),
                 'up-migration' => array(
                     'options' => array(
-                        'route' => 'up migration [--to=] [--module=]',
+                        'route' => 'up migration <to> [--module=]',
                         'defaults' => array(
                             'controller' => 'ZFCTool\Controller\Migration',
                             'action' => 'up'
@@ -122,7 +122,7 @@ return array(
                 ),
                 'import-dump' => array(
                     'options' => array(
-                        'route' => 'import dump [--module=] [--name=]',
+                        'route' => 'import dump <name> [--module=]',
                         'defaults' => array(
                             'controller' => 'ZFCTool\Controller\Dump',
                             'action' => 'import'
