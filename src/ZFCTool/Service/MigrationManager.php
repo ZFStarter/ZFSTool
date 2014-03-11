@@ -228,7 +228,7 @@ class MigrationManager
             $path = $modulePath . '/' . $this->getMigrationsDirectoryName();
         }
 
-        $this->_preparePath($path);
+        $this->preparePath($path);
 
         return $path;
     }
@@ -312,7 +312,7 @@ class MigrationManager
             if (isset($migrationBody['down'])) {
                 $downBody = '';
                 foreach ($migrationBody['down'] as $query) {
-                    $downBody .= '$this->query(\'' . $query . '\');' . PHP_EOL;
+                    $downBody .= '$this->query(\'' . $query . '\');';
                 }
                 $methodDown['body'] = $downBody;
             }
@@ -350,10 +350,10 @@ class MigrationManager
      *
      * @param string $path
      */
-    protected function _preparePath($path)
+    protected function preparePath($path)
     {
         if (!is_dir($path)) {
-            $this->_preparePath(dirname($path));
+            $this->preparePath(dirname($path));
             mkdir($path, 0777);
         }
     }
@@ -455,8 +455,11 @@ class MigrationManager
         $selectString = $sql->getSqlStringForSqlObject($query);
         $result = $this->db->query($selectString, Adapter::QUERY_MODE_EXECUTE);
 
-        if ($result && $result->current()) {
-            return $result->current()->state;
+        if ($result) {
+            $row = $result->current();
+            if ($row) {
+                return $row->state;
+            }
         }
 
         return null;
@@ -562,13 +565,10 @@ class MigrationManager
      * @param string $blacklist
      * @param string $whitelist
      * @param bool $showDiff
-     * @param string $label
-     * @param string $description
      * @return array|bool|string
      */
 
-    public function generateMigration($module = null, $blacklist = '', $whitelist = '', $showDiff = false,
-                                      $label = '', $description = '')
+    public function generateMigration($module = null, $blacklist = '', $whitelist = '', $showDiff = false)
     {
         $blkListedTables = array();
         $blkListedTables[] = $this->options['migrationsSchemaTable'];
@@ -599,41 +599,44 @@ class MigrationManager
             if ($showDiff) {
                 return $difference;
             } else {
-                return $this->create($module, $difference, $label, $description);
+                return $this->create($module, $difference);
             }
         }
     }
 
     /**
      * @param $module
-     * @param $to
+     * @param $migration
      * @return mixed
      * @throws ZFCToolException
      */
-    public function fake($module, $to)
+    public function commit($module, $migration)
     {
         $lastMigration = $this->getLastMigration($module);
 
-        if ($to) {
-            if (!self::isMigration($to)) {
-                throw new IncorrectMigrationNameException("Migration name `$to` is not valid");
-            } elseif ($lastMigration['migration'] == $to) {
-                throw new CurrentMigrationException("Migration `$to` is current");
+        if ($migration) {
+            if (!self::isMigration($migration)) {
+                throw new IncorrectMigrationNameException("Migration name `$migration` is not valid");
+            } elseif ($lastMigration['migration'] == $migration) {
+                throw new CurrentMigrationException("Migration `$migration` is current");
             }
 
             $exists = $this->getExistsMigrations($module);
 
-            if (!in_array($to, $exists)) {
-                throw new MigrationNotExistsException("Migration `$to` not exists");
+            if (!in_array($migration, $exists)) {
+                throw new MigrationNotExistsException("Migration `$migration` not exists");
             }
 
             $loaded = $this->getLoadedMigrations($module);
 
-            if (in_array($to, $loaded)) {
-                throw new MigrationExecutedException("Migration `$to` already executed");
+            if (in_array($migration, $loaded)) {
+                throw new MigrationExecutedException("Migration `$migration` already executed");
             }
 
-            $this->_pushMigration($module, $to);
+            $this->_pushMigration($module, $migration);
+
+            // add db state to migration
+            $this->updateDbState($module, $migration);
 
         } else {
             throw new IncorrectMigrationNameException('Need migration name for fake upgrade.');
@@ -739,8 +742,8 @@ class MigrationManager
         if (null !== $to) {
             if (!self::isMigration($to)) {
                 throw new IncorrectMigrationNameException("Migration name `$to` is not valid");
-            } elseif ($lastMigration == $to) {
-                throw new CurrentMigrationException("Migration `$to` is current");
+//            } elseif ($lastMigration == $to) {
+//                throw new CurrentMigrationException("Migration `$to` is current");
             } elseif ($lastMigration < $to) {
                 throw new YoungMigrationException("Migration `$to` is younger than current "
                     . "migration `$lastMigration`");
@@ -759,10 +762,6 @@ class MigrationManager
 
         foreach ($loaded as $migration) {
 
-            if (($to) && ($migration == $to)) {
-                break;
-            }
-
             if (!in_array($migration, $exists)) {
                 throw new MigrationNotExistsException("Migration `$migration` not exists");
             }
@@ -773,9 +772,7 @@ class MigrationManager
 
                 include_once $includePath;
 
-                $moduleAddon = ''; //((null !== $module) ? ucfirst($module) . '_' : '');
-
-                $migrationClass = $moduleAddon . 'Migration_' . $migration;
+                $migrationClass = 'Migration_' . $migration;
                 $migrationObject = new $migrationClass($this->db);
                 /** @var AbstractMigration $migrationObject */
                 $migrationObject->setMigrationManager($this);
@@ -801,9 +798,9 @@ class MigrationManager
                 }
 
                 if ($module) {
-                    $this->addMessage($module . ": degrade to revision `$migration`");
+                    $this->addMessage($module . ": degrade revision `$migration`");
                 } else {
-                    $this->addMessage("Degrade to revision `$migration`");
+                    $this->addMessage("Degrade revision `$migration`");
                 }
 
                 $this->_pullMigration($module, $migration);
@@ -812,6 +809,10 @@ class MigrationManager
                     "Migration `$module`.`$migration` return exception:\n"
                     . $e->getMessage() . ' in ' . $e->getFile() . '#' . $e->getLine()
                 );
+            }
+
+            if (($to) && ($migration == $to)) {
+                break;
             }
         }
     }
@@ -877,9 +878,7 @@ class MigrationManager
 
                 include_once $includePath;
 
-                $moduleAddon = ''; //((null !== $module) ? ucfirst($module) . '_' : '');
-
-                $migrationClass = $moduleAddon . 'Migration_' . $migration;
+                $migrationClass = 'Migration_' . $migration;
 
                 /** @var AbstractMigration $migrationObject */
                 $migrationObject = new $migrationClass($this->db);
@@ -913,22 +912,8 @@ class MigrationManager
                 $this->_pushMigration($module, $migration);
 
                 // add db state to migration
-                $db = new Database($this->db, array('blacklist' => $this->options['migrationsSchemaTable']));
+                $this->updateDbState($module, $migration);
 
-                $sql = new Sql($this->db);
-                $update = $sql->update($this->getMigrationsSchemaTable());
-                $where = new Where();
-                $where->equalTo('module', $module)
-                    ->and
-                    ->equalTo('migration', $migration);
-                $update->where($where);
-                $update->set(
-                    array(
-                        'state' => $db->toString()
-                    )
-                );
-                $selectString = $sql->getSqlStringForSqlObject($update);
-                $this->db->query($selectString, Adapter::QUERY_MODE_EXECUTE);
 
             } catch (\Exception $e) {
                 throw new ZFCToolException(
@@ -941,6 +926,32 @@ class MigrationManager
                 break;
             }
         }
+    }
+
+
+    /**
+     * Add db state to migration
+     *
+     * @param string|null $module
+     * @param string| $migration
+     */
+    protected function updateDbState($module, $migration)
+    {
+        $db = new Database($this->db, array('blacklist' => $this->options['migrationsSchemaTable']));
+        $sql = new Sql($this->db);
+        $update = $sql->update($this->getMigrationsSchemaTable());
+        $where = new Where();
+        $where->equalTo('module', $module)
+            ->and
+            ->equalTo('migration', $migration);
+        $update->where($where);
+        $update->set(
+            array(
+                'state' => $db->toString()
+            )
+        );
+        $selectString = $sql->getSqlStringForSqlObject($update);
+        $this->db->query($selectString, Adapter::QUERY_MODE_EXECUTE);
     }
 
 
@@ -979,9 +990,7 @@ class MigrationManager
 
                 include_once $includePath;
 
-                $moduleAddon = ''; // ((null !== $module) ? ucfirst($module) . '_' : '');
-
-                $migrationClass = $moduleAddon . 'Migration_' . $migration;
+                $migrationClass = 'Migration_' . $migration;
                 /** @var AbstractMigration $migrationObject */
                 $migrationObject = new $migrationClass($this->db);
 

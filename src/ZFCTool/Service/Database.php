@@ -98,7 +98,7 @@ class Database
             $tables = $metadata->getTables();
 
             foreach ($tables as $table) {
-                $this->addTable($table->getName(), $table);
+                $this->addTable($table->getName());
             }
         }
     }
@@ -207,14 +207,55 @@ class Database
     /**
      * add table to DB object
      * @param $tableName
-     * @param $scheme - table structure from DESCRIBE TABLE query
      */
-
-    public function addTable($tableName, $scheme)
+    public function addTable($tableName)
     {
         if ($this->isTblWhiteListed($tableName) && !$this->isTblBlackListed($tableName)) {
-            $this->scheme[$tableName] = $scheme;
 
+            $metadata = new \Zend\Db\Metadata\Metadata($this->db);
+            //$constraint = $metadata->getConstraints($tableName);
+            //var_dump($constraint);exit;
+            // get the table names
+            $columns = $metadata->getColumns($tableName);
+            //var_dump($columns);exit;
+            $scheme = array();
+
+            /** @var $column \Zend\Db\Metadata\Object\ColumnObject */
+            foreach ($columns as $column) {
+//                if($column->getName() === 'type'){
+//                    var_dump($metadata->getConstraints($tableName)[0]);
+//                    var_dump($column);exit;
+//                }
+
+                $scheme[$column->getName()] = array(
+                    'SCHEMA_NAME' => null,
+                    'TABLE_NAME' => $column->getTableName(),
+                    'COLUMN_NAME' => $column->getName(),
+                    'COLUMN_POSITION' => $column->getOrdinalPosition(),
+                    'DATA_TYPE' => $column->getDataType(),
+                    'DEFAULT' => $column->getColumnDefault(),
+                    'NULLABLE' => $column->isNullable(),
+                    'LENGTH' => $column->getCharacterMaximumLength(),
+                    'SCALE' => $column->getNumericScale(),
+                    'PRECISION' => $column->getNumericPrecision(),
+                    'UNSIGNED' => $column->getNumericUnsigned(),
+                    'PRIMARY' => false,
+                    'IDENTITY' => false
+                );
+            }
+
+            /** @var $constraintObject \Zend\Db\Metadata\Object\ConstraintObject */
+            foreach ($metadata->getConstraints($tableName) as $constraintObject) {
+
+                if ('PRIMARY KEY' === $constraintObject->getType()) {
+                    foreach ($constraintObject->getColumns() as $columnName) {
+                        $scheme[$columnName]['PRIMARY'] = true;
+                        $scheme[$columnName]['IDENTITY'] = true;
+                    }
+                }
+            }
+
+            $this->scheme[$tableName] = $scheme;
             $this->indexes[$tableName] = $this->getIndexListFromTable($tableName);
 
             if (isset($this->options['loaddata']) && $this->options['loaddata'] == true) {

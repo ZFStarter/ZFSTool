@@ -6,6 +6,10 @@
  */
 $basePath = getcwd();
 
+if (!ini_get('date.timezone')) {
+    date_default_timezone_set('UTC');
+}
+
 ini_set('user_agent', 'ZFCTool - ZFCore2 command line tool');
 
 // load autoloader

@@ -7,14 +7,11 @@
 namespace ZFCTool\Controller;
 
 use Zend\EventManager\EventManagerInterface;
-use Zend\EventManager\Event;
-use Zend\View\Model\ViewModel;
 use Zend\Mvc\Controller\AbstractActionController;
 use Zend\Console\Request as ConsoleRequest;
 use Zend\Console\Adapter\AdapterInterface as Console;
 use Zend\Console\ColorInterface as Color;
 use Zend\Console\Exception\RuntimeException;
-
 use ZFCTool\Exception\ZFCToolException;
 use ZFCTool\Service\DumpManager;
 

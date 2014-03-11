@@ -7,13 +7,11 @@
 namespace ZFCTool\Controller;
 
 use Zend\EventManager\EventManagerInterface;
-use Zend\View\Model\ViewModel;
 use Zend\Mvc\Controller\AbstractActionController;
 use Zend\Console\Request as ConsoleRequest;
 use Zend\Console\Adapter\AdapterInterface as Console;
 use Zend\Console\ColorInterface as Color;
 use Zend\Console\Exception\RuntimeException;
-
 use ZFCTool\Exception\ZFCToolException;
 use ZFCTool\Service\MigrationManager;
 
@@ -109,12 +107,6 @@ class MigrationController extends AbstractActionController
     }
 
 
-    public function indexAction()
-    {
-        return new ViewModel(); // display standard index page
-    }
-
-
     public function listAction()
     {
         $module = $this->request->getParam('module');
@@ -200,15 +192,33 @@ class MigrationController extends AbstractActionController
         if ($module) {
             $this->console->writeLine('Only for module "' . $module . '":');
         }
+        $empty = $this->request->getParam('empty');
+        $commit = $this->request->getParam('commit');
+        $whitelist = $this->request->getParam('whitelist');
+        $blacklist = $this->request->getParam('blacklist');
 
         try {
+            if ($empty) {
+                $migrationPath = $this->manager->create($module);
 
-            $migrationPath = $this->manager->generateMigration($module);
+                if ($migrationPath) {
+                    $this->console->writeLine('Migration created: ' . $migrationPath, Color::GREEN);
+                }
+            } else {
+                $migrationPath = $this->manager->generateMigration($module, $blacklist, $whitelist);
 
-            if ($migrationPath) {
-                $this->console->writeLine('Migration generated: ' . $migrationPath, Color::GREEN);
+                if ($migrationPath) {
+                    $this->console->writeLine('Migration generated: ' . $migrationPath, Color::GREEN);
+                }
+
+                if ($commit) {
+                    $path = $this->manager->getMigrationsDirectoryPath($module);
+                    $migration = str_replace(array($path . '/', '.php'), '', $migrationPath);
+                    $this->manager->commit($module, $migration);
+                    $this->console->writeLine('Committed migration: ' . $migration, Color::GREEN);
+                }
+
             }
-
         } catch (ZFCToolException $e) {
             $this->console->writeLine($e->getMessage(), Color::RED);
         } catch (\Exception $e) {
@@ -216,25 +226,25 @@ class MigrationController extends AbstractActionController
         }
     }
 
-    public function fakeAction()
+    public function commitAction()
     {
         $module = $this->request->getParam('module');
         if ($module) {
             $this->console->writeLine('Only for module "' . $module . '":');
         }
-        $to = $this->request->getParam('to');
+        $migration = $this->request->getParam('to');
 
 
         try {
-            $migrationManager = $this->getManager();
+//            $migrationManager = $this->getManager();
 
-            if ((null === $to) && $migrationManager::isMigration($module)) {
-                list($to, $module) = array($module, null);
-            }
+//            if ((null === $migration) && $migrationManager::isMigration($module)) {
+//                list($to, $module) = array($module, null);
+//            }
 
-            $this->manager->fake($module, $to);
+            $this->manager->commit($module, $migration);
 
-            $this->console->writeLine("Fake upgrade to revision `$to`", Color::GREEN);
+            $this->console->writeLine('Migration "' . $migration . '" committed', Color::GREEN);
 
         } catch (ZFCToolException $e) {
             $this->console->writeLine($e->getMessage(), Color::RED);
@@ -281,17 +291,16 @@ class MigrationController extends AbstractActionController
         if ($module) {
             $this->console->writeLine('Only for module "' . $module . '":');
         }
-        $to = $this->request->getParam('to');
+        $migration = $this->request->getParam('to');
 
         try {
 
             $migrationManager = $this->getManager();
 
-            if ((null === $to) && $migrationManager::isMigration($module)) {
-                list($to, $module) = array($module, null);
-            }
-
-            $this->manager->up($module, $to);
+//            if ((null === $to) && $migrationManager::isMigration($module)) {
+//                list($to, $module) = array($module, null);
+//            }
+            $this->manager->up($module, $migration);
 
             foreach ($this->manager->getMessages() as $message) {
                 $this->console->writeLine($message, Color::GREEN);
@@ -321,7 +330,7 @@ class MigrationController extends AbstractActionController
 
         try {
 
-            $result = $this->manager->generateMigration($module, $blackList, $whiteList, true, '', '');
+            $result = $this->manager->generateMigration($module, $blackList, $whiteList, true);
 
             if (!empty($result)) {
                 $this->console->writeLine('Queries (' . sizeof($result['up']) . ') :' . PHP_EOL);
@@ -379,10 +388,10 @@ class MigrationController extends AbstractActionController
 
 
     /**
-     * current migration
+     * show migration
      *
      */
-    public function currentAction()
+    public function showAction()
     {
         $module = $this->request->getParam('module');
 

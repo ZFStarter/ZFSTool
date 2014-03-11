@@ -134,7 +134,7 @@ class MigrationManagerTest extends \PHPUnit_Framework_TestCase
     public function testFakeIncorrectMigrationNameException()
     {
         try {
-            $this->manager->fake(null, 'fake');
+            $this->manager->commit(null, 'fake');
         } catch (IncorrectMigrationNameException $expected) {
             $this->assertTrue(true);
             return;
@@ -147,7 +147,7 @@ class MigrationManagerTest extends \PHPUnit_Framework_TestCase
         $this->manager->up(null, '99999999_000000_00');
 
         try {
-            $this->manager->fake(null, '99999999_000000_00');
+            $this->manager->commit(null, '99999999_000000_00');
         } catch (CurrentMigrationException $expected) {
             $this->assertTrue(true);
             return;
@@ -158,7 +158,7 @@ class MigrationManagerTest extends \PHPUnit_Framework_TestCase
     public function testFakeMigrationNotExistsExceptions()
     {
         try {
-            $this->manager->fake(null, '12345678_000000_00');
+            $this->manager->commit(null, '12345678_000000_00');
         } catch (MigrationNotExistsException $expected) {
             $this->assertTrue(true);
             return;
@@ -169,7 +169,7 @@ class MigrationManagerTest extends \PHPUnit_Framework_TestCase
     public function testFakeIncorrectMigrationName()
     {
         try {
-            $this->manager->fake(null, null);
+            $this->manager->commit(null, null);
         } catch (IncorrectMigrationNameException $expected) {
             $this->assertTrue(true);
             return;
@@ -182,7 +182,7 @@ class MigrationManagerTest extends \PHPUnit_Framework_TestCase
     {
         $this->manager->up(null, '99999999_000000_01');
         try {
-            $this->manager->fake(null, '99999999_000000_00');
+            $this->manager->commit(null, '99999999_000000_00');
         } catch (MigrationExecutedException $expected) {
             $this->assertTrue(true);
             return;
@@ -202,7 +202,7 @@ class MigrationManagerTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals($manager::MIGRATION_TYPE_READY, $migrations[0]['type']);
         $this->assertEquals('99999999_000000_00', $migrations[0]['name']);
 
-        $this->manager->fake(null, '99999999_000000_00');
+        $this->manager->commit(null, '99999999_000000_00');
 
         $migrations = $this->manager->listMigrations();
         $this->assertTrue(is_array($migrations));
@@ -457,20 +457,6 @@ class MigrationManagerTest extends \PHPUnit_Framework_TestCase
         $this->fail('An expected Exception has not been raised.');
     }
 
-    public function testDownCurrentMigrationExceptions()
-    {
-        $this->manager->up(null, '99999999_000000_00');
-
-        try {
-            $this->manager->down(null, '99999999_000000_00');
-        } catch (CurrentMigrationException $expected) {
-            $this->assertTrue(true);
-            return;
-        }
-        $this->fail('An expected Exception has not been raised.');
-    }
-
-
     public function testDownYoungMigrationException()
     {
         $this->manager->up(null, '99999999_000000_00');
@@ -534,9 +520,9 @@ class MigrationManagerTest extends \PHPUnit_Framework_TestCase
     {
         return array(
             array(null, null, 'items_0%', 0),
-            array(null, '99999999_000000_02', 'items_0%', 3),
+            array(null, '99999999_000000_02', 'items_0%', 2),
             array(self::FIXTURE_MODULE, null, 'items_s%', 0),
-            array(self::FIXTURE_MODULE, '99999999_100000_01', 'items_s%', 2)
+            array(self::FIXTURE_MODULE, '99999999_100000_01', 'items_s%', 1)
         );
     }
 

@@ -48,33 +48,42 @@ class Module implements ConsoleUsageProviderInterface, AutoloaderProviderInterfa
     public function getConsoleUsage(ConsoleAdapterInterface $console)
     {
         return array(
-            'Migration:',
-            'generate migration [--module] [--whitelist] [--blacklist]' => '- Generate new migration',
+            'Migrations:',
+
+            'ls migrations [--module]' => '- List of exist migrations',
+            array('--module', '(Optional) Module name'),
+
+            'up db <to> [--module]' => '- Update DB to selected migration',
+            array('--module', '(Optional) Module name'),
+            array('to', '(Optional) Migration name'),
+
+            'down db <to> [--module]' => '- Downgrade selected migration from DB',
+            array('--module', '(Optional) Module name'),
+            array('to', '(Optional) Migration name'),
+
+            'show migration [--module]' => '- Show current migration',
+            array('--module', '(Optional) Module name'),
+
+            'gen migration [--module] [--whitelist] [--blacklist] [-c] [-e]' => '- Generate new migration',
             array('--module', '(Optional) Module name'),
             array('--whitelist', '(Optional) White list of tables'),
             array('--blacklist', '(Optional) Black list of tables'),
-            'diff migration [--module] [--whitelist] [--blacklist]' => '- Show generated queries without creating migration',
-            array('--module', '(Optional) Module name'),
-            array('--whitelist', '(Optional) White list of tables'),
-            array('--blacklist', '(Optional) Black list of tables'),
-            'listing migration [--module]' => '- List of exist migrations',
-            array('--module', '(Optional) Module name'),
-            'current migration [--module]' => '- Show current migration',
-            array('--module', '(Optional) Module name'),
-            'create migration [--module]' => '- Create template for migration',
-            array('--module', '(Optional) Module name'),
-            'up migration <to> [--module]' => '- Update DB to selected migration',
+            array('-c', '(Optional) Create and commit migration'),
+            array('-e', '(Optional) Create empty migration'),
+
+            'ci migration <to> [--module]' => '- Commit selected migration to DB',
             array('--module', '(Optional) Module name'),
             array('to', 'To migration'),
-            'down migration <to> [--module]' => '- Downgrade DB to selected migration',
-            array('--module', '(Optional) Module name'),
-            array('to', 'To migration'),
-            'rollback migration [--module] [--step]' => '- Rollback migrations',
+
+            'back db [--module] [--step]' => '- Rollback DB',
             array('--module', '(Optional) Module name'),
             array('--step', 'Count of rollback migrations'),
-            'fake migration <to> [--module]' => '- Fake update DB to selected migration',
+
+            'diff db [--module] [--whitelist] [--blacklist]' => '- Show generated queries without creating migration',
             array('--module', '(Optional) Module name'),
-            array('to', 'To migration'),
+            array('--whitelist', '(Optional) White list of tables'),
+            array('--blacklist', '(Optional) Black list of tables'),
+
 
             'Dump:',
             'create dump [--module] [--name] [--whitelist] [--blacklist]' => '- Creating dump',
