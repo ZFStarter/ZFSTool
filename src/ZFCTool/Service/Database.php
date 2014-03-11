@@ -8,10 +8,8 @@ namespace ZFCTool\Service;
 
 use Zend\Db\Adapter\Adapter;
 use Zend\Db\Metadata\Metadata;
-use ZFCTool\Service\Database\Diff;
 use Zend\Db\Adapter\Driver\StatementInterface;
 use Zend\Db\Sql\Sql;
-use Zend\Db\Sql\Where;
 use Zend\Db\Sql\Ddl;
 use Zend\Db\Sql\Ddl\Column;
 
@@ -213,19 +211,12 @@ class Database
         if ($this->isTblWhiteListed($tableName) && !$this->isTblBlackListed($tableName)) {
 
             $metadata = new \Zend\Db\Metadata\Metadata($this->db);
-            //$constraint = $metadata->getConstraints($tableName);
-            //var_dump($constraint);exit;
             // get the table names
             $columns = $metadata->getColumns($tableName);
-            //var_dump($columns);exit;
             $scheme = array();
 
             /** @var $column \Zend\Db\Metadata\Object\ColumnObject */
             foreach ($columns as $column) {
-//                if($column->getName() === 'type'){
-//                    var_dump($metadata->getConstraints($tableName)[0]);
-//                    var_dump($column);exit;
-//                }
 
                 $scheme[$column->getName()] = array(
                     'SCHEMA_NAME' => null,

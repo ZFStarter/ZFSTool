@@ -53,7 +53,7 @@ abstract class AbstractMigration
      *
      * @var Adapter
      */
-    protected $_dbAdapter = null;
+    protected $db = null;
 
     /**
      * migration Adapter
@@ -75,7 +75,7 @@ abstract class AbstractMigration
      */
     public function __construct(Adapter $dbAdapter)
     {
-        $this->_dbAdapter = $dbAdapter;
+        $this->db = $dbAdapter;
     }
 
     /**
@@ -96,19 +96,6 @@ abstract class AbstractMigration
      */
     abstract public function down();
 
-    /**
-     * setDbAdapter
-     *
-     * @param  Adapter $dbAdapter
-     * @return AbstractMigration
-     */
-    public function setDbAdapter($dbAdapter = null)
-    {
-        if ($dbAdapter && ($dbAdapter instanceof Adapter)) {
-            $this->_dbAdapter = $dbAdapter;
-        }
-        return $this;
-    }
 
     /**
      * getDbAdapter
@@ -117,10 +104,7 @@ abstract class AbstractMigration
      */
     public function getDbAdapter()
     {
-        if (!$this->_dbAdapter) {
-            $this->setDbAdapter();
-        }
-        return $this->_dbAdapter;
+        return $this->db;
     }
 
     /**
