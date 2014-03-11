@@ -213,13 +213,7 @@ class MigrationController extends AbstractActionController
         }
         $migration = $this->request->getParam('to');
 
-
         try {
-//            $migrationManager = $this->getManager();
-
-//            if ((null === $migration) && $migrationManager::isMigration($module)) {
-//                list($to, $module) = array($module, null);
-//            }
 
             $this->manager->commit($module, $migration);
 
