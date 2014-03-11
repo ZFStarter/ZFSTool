@@ -1,4 +1,3 @@
-
 То что тесты проходят успешно это ещё ни о чем не говорит (c)
 
 [![Build Status](https://travis-ci.org/naxel/ZFCTool.png?branch=master)](https://travis-ci.org/naxel/ZFCTool)
@@ -8,65 +7,99 @@ ZFCTool - Zend Framework 2 command line Tool
 
 ------------------------------------------------------------------------------------------------------------
 
-Migrations:
+###Работа с миграциями:
+
+####Список всех миграций
 
 ```bash
-  ~$ php vendor/bin/zfc.php ls migrations [--module]    - List of exist migrations
-
-  --module    (Optional) Module name
-
-  ~$ php vendor/bin/zfc.php up db <to> [--module]    - Update DB to selected migration
-
-  --module    (Optional) Module name
-  to          (Optional) Migration name
-
-  ~$ php vendor/bin/zfc.php down db <to> [--module]    - Downgrade selected migration from DB
-
-  --module    (Optional) Module name
-  to          (Optional) Migration name
-
-  ~$ php vendor/bin/zfc.php show migration [--module]    - Show current migration
-
-  --module    (Optional) Module name
-
-  ~$ php vendor/bin/zfc.php gen migration [--module] [--whitelist] [--blacklist] [-c] [-e]    - Generate new migration
-
-  --module       (Optional) Module name
-  --whitelist    (Optional) White list of tables
-  --blacklist    (Optional) Black list of tables
-  -c             (Optional) Create and commit migration
-  -e             (Optional) Create empty migration
-
-  ~$ php vendor/bin/zfc.php ci migration <to> [--module]    - Commit selected migration to DB
-
-  --module    (Optional) Module name
-  to          To migration
-
-  ~$ php vendor/bin/zfc.php back db [--module] [--step]    - Rollback DB
-
-  --module    (Optional) Module name
-  --step      Count of rollback migrations
-
-  ~$ php vendor/bin/zfc.php diff db [--module] [--whitelist] [--blacklist]    - Show generated queries without creating migration
-
-  --module       (Optional) Module name
-  --whitelist    (Optional) White list of tables
-  --blacklist    (Optional) Black list of tables
+  ~$ php vendor/bin/zfc.php ls migrations [--module]
 ```
+`module`  - (Опциональный) вывести только миграции указанного модуля
 
-Dump:
+
+####Обновить БД к указанной миграции
 
 ```bash
-  ~$ php vendor/bin/zfc.php create dump [--module] [--name] [--whitelist] [--blacklist]    - Creating dump
-
-  --module       (Optional) Module name
-  --name         (Optional) Dump file name
-  --whitelist    (Optional) White list of tables
-  --blacklist    (Optional) Black list of tables
-
-  ~$ php vendor/bin/zfc.php import dump <name> [--module]    - import already created dump
-
-  --module    Module name
-  name        Dump file name
-
+  ~$ php vendor/bin/zfc.php up db <to> [--module]
 ```
+`module`  - (Опциональный) название модуля, к которому будет применяться (если не указан, то применяеться ко всем миграциям)
+`to`  - (Опциональный) имя миграции к которой обновить (если не указан, то обновить к последней)
+
+
+####Откатить миграции все мигрции до указанной, включая её
+
+```bash
+  ~$ php vendor/bin/zfc.php down db <to> [--module]
+```
+`module`  - (Опциональный) название модуля, к которому будет применяться (если не указан, то применяеться ко всем миграциям)
+`to`  - (Опциональный) имя миграции, которую откатить (если не указан, то откатить все)
+  
+  
+  
+####Показать текущую миграцию
+```bash
+  ~$ php vendor/bin/zfc.php show migration
+```
+
+####Сгенерировать миграцию
+
+```bash
+  ~$ php vendor/bin/zfc.php gen migration [--module] [--whitelist] [--blacklist] [-c] [-e]
+```
+`module`  - (Опциональный) название модуля, для которого сгенерируеться миграция
+
+`module`  - (Опциональный) название модуля, для которого сгенерируеться миграция
+`whitelist`  - (Опциональный) список таблиц, для которых генерить
+`blacklist`  - (Опциональный) список таблиц исключения
+`c`  - (Опциональный) сразу же после создания применить миграцию
+`e`  - (Опциональный) создать пустой шаблон миграции
+
+
+####Принудительное применение миграции
+
+```bash
+  ~$ php vendor/bin/zfc.php ci migration <to> [--module]
+```
+`module`  - (Опциональный) название модуля, где находиться миграция
+`to`  - имя миграции, которую следует применить
+
+
+####Откат мигрций
+```bash
+  ~$ php vendor/bin/zfc.php back db [--module] [--step]
+```
+
+`module`  - (Опциональный) название модуля
+`step`  - (Опциональный) количество откатываемых миграций
+
+
+####Показать различие в стрцктуре БД между последним обновлением и текущим состоянием
+```bash
+  ~$ php vendor/bin/zfc.php diff db [--module] [--whitelist] [--blacklist]
+```
+
+`module`  - (Опциональный) название модуля, для которого сгенерируеться миграция
+`whitelist`  - (Опциональный) список таблиц, для которых генерить
+`blacklist`  - (Опциональный) список таблиц исключения
+
+
+###Работа с дампом БД:
+
+####Создание дампа БД:
+
+```bash
+  ~$ php vendor/bin/zfc.php create dump [--module] [--name] [--whitelist] [--blacklist]
+```
+
+`name`  - (Опциональный) имя дампа
+`module`  - (Опциональный) название модуля, для которого сгенерируеться дамп
+`whitelist`  - (Опциональный) список таблиц, для которых генерить
+`blacklist`  - (Опциональный) список таблиц исключения
+
+####Импорт дампа БД:
+```bash
+  ~$ php vendor/bin/zfc.php import dump <name> [--module]
+```
+
+`module`  - (Опциональный) название модуля, для которого сгенерируеться дамп
+`name`  - (Опциональный) имя дампа

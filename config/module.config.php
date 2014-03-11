@@ -38,16 +38,6 @@ return array(
                         )
                     )
                 ),
-//                'create-migration' => array(
-//                    'options' => array(
-//                        'route' => 'create migration [--module=]',
-//                        'defaults' => array(
-//                            'controller' => 'ZFCTool\Controller\Migration',
-//                            'action' => 'create'
-//                        )
-//                    )
-//                ),
-
                 'generate-migration' => array(
                     'options' => array(
                         'route' => '(generate|gen) migration [--module=] [--commit|-c]:commit [--empty|-e]:empty [--whitelist=] [--blacklist=]',

@@ -165,27 +165,6 @@ class MigrationController extends AbstractActionController
     }
 
 
-    public function createAction()
-    {
-        $module = $this->request->getParam('module');
-        if ($module) {
-            $this->console->writeLine('Only for module "' . $module . '":');
-        }
-
-        try {
-            $migrationPath = $this->manager->create($module);
-
-            if ($migrationPath) {
-                $this->console->writeLine('Migration created: ' . $migrationPath, Color::GREEN);
-            }
-        } catch (ZFCToolException $e) {
-            $this->console->writeLine($e->getMessage(), Color::RED);
-        } catch (\Exception $e) {
-            $this->console->writeLine($e->getMessage(), Color::RED);
-        }
-    }
-
-
     public function generateAction()
     {
         $module = $this->request->getParam('module');
@@ -295,11 +274,6 @@ class MigrationController extends AbstractActionController
 
         try {
 
-            $migrationManager = $this->getManager();
-
-//            if ((null === $to) && $migrationManager::isMigration($module)) {
-//                list($to, $module) = array($module, null);
-//            }
             $this->manager->up($module, $migration);
 
             foreach ($this->manager->getMessages() as $message) {
