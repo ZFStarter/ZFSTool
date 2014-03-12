@@ -293,8 +293,8 @@ class MigrationController extends AbstractActionController
             $this->console->writeLine('Only for module "' . $module . '":');
         }
 
-        $whiteList = $this->request->getParam('whiteList');
-        $blackList = $this->request->getParam('blackList');
+        $whiteList = $this->request->getParam('whitelist');
+        $blackList = $this->request->getParam('blacklist');
 
         try {
 
@@ -331,11 +331,7 @@ class MigrationController extends AbstractActionController
         }
         $step = $this->request->getParam('step');
 
-        if (is_numeric($module) && (0 < (int)$module)) {
-            list($step, $module) = array($module, null);
-        }
-
-        if (null === $step) {
+        if (!$step) {
             $step = 1;
         }
 

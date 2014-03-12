@@ -83,9 +83,9 @@ return array(
                         )
                     )
                 ),
-                'rollback-migration' => array(
+                'rollback-db' => array(
                     'options' => array(
-                        'route' => '(rollback|back):rollback migration [--module=] [--step=]',
+                        'route' => '(rollback|back) db [--module=] [--step=]',
                         'defaults' => array(
                             'controller' => 'ZFCTool\Controller\Migration',
                             'action' => 'rollback'
@@ -94,7 +94,7 @@ return array(
                 ),
                 'diff-db' => array(
                     'options' => array(
-                        'route' => 'diff db [--blacklist=]',
+                        'route' => 'diff db [--module=] [--whitelist=] [--blacklist=]',
                         'defaults' => array(
                             'controller' => 'ZFCTool\Controller\Migration',
                             'action' => 'diff'

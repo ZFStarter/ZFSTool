@@ -10,10 +10,15 @@ use ZFCToolTest\Bootstrap;
 use ZFCTool\Service\MigrationManager;
 use Zend\Db\Adapter\Adapter;
 use Zend\Test\PHPUnit\Controller\AbstractConsoleControllerTestCase;
+use ZFCTool\Service\Migration\Adapter\Mysql;
+use ZFCTool\Service\Database;
+use ZFCTool\Service\Migration\AbstractMigration;
 
 class MigrationControllerTest extends AbstractConsoleControllerTestCase
 {
     const FIXTURE_MODULE = 'simplemodule';
+
+    const TABLE_NAME = 'test_table';
 
     protected $verbose = false;
 
@@ -105,6 +110,163 @@ class MigrationControllerTest extends AbstractConsoleControllerTestCase
         $this->assertMatchedRouteName('listing-migration');
     }
 
+    public function testCreateEmptyMigration()
+    {
+        // dispatch url
+        $this->dispatch('gen migration -e');
+
+        $this->assertResponseStatusCode(0);
+        $this->assertActionName('generate');
+        $this->assertControllerName('ZFCTool\Controller\Migration');
+        $this->assertControllerClass('MigrationController');
+        $this->assertMatchedRouteName('generate-migration');
+        $response = ob_get_contents();
+
+        $migrationPath = str_replace(array('Migration created: ', PHP_EOL), '', $response);
+        $this->assertTrue(is_file($migrationPath));
+
+        unlink($migrationPath);
+    }
+
+    public function testCreateEmptyMigrationForModule()
+    {
+        // dispatch url
+        $this->dispatch('generate migration -e --module=' . self::FIXTURE_MODULE);
+
+        $this->assertResponseStatusCode(0);
+        $this->assertActionName('generate');
+        $this->assertControllerName('ZFCTool\Controller\Migration');
+        $this->assertControllerClass('MigrationController');
+        $this->assertMatchedRouteName('generate-migration');
+        $response = ob_get_contents();
+
+        $this->assertContains('Only for module "' . self::FIXTURE_MODULE . '":', $response);
+
+        $migrationPath = str_replace(
+            array(
+                'Migration created: ',
+                PHP_EOL,
+                'Only for module "' . self::FIXTURE_MODULE . '":'
+            )
+            , '', $response
+        );
+
+        $this->assertTrue(is_file($migrationPath));
+
+        unlink($migrationPath);
+    }
+
+
+    public function testGenerateMigration()
+    {
+        $db = new Mysql(self::$db);
+
+        $db->query(Database::dropTable(self::TABLE_NAME));
+        $db->createTable(self::TABLE_NAME);
+        $db->createColumn(self::TABLE_NAME, 'col1', AbstractMigration::TYPE_INT);
+        $db->createColumn(self::TABLE_NAME, 'col2', AbstractMigration::TYPE_TEXT);
+
+        // dispatch url
+        $this->dispatch('gen migration --whitelist=' . self::TABLE_NAME);
+
+        $this->assertResponseStatusCode(0);
+        $this->assertActionName('generate');
+        $this->assertControllerName('ZFCTool\Controller\Migration');
+        $this->assertControllerClass('MigrationController');
+        $this->assertMatchedRouteName('generate-migration');
+        $response = ob_get_contents();
+
+        $migrationPath = str_replace(array('Migration generated: ', PHP_EOL), '', $response);
+        $this->assertTrue(is_file($migrationPath));
+
+        unlink($migrationPath);
+
+        $db->query(Database::dropTable(self::TABLE_NAME));
+    }
+
+    public function testGenerateAndCommitMigration()
+    {
+        $db = new Mysql(self::$db);
+
+        $db->query(Database::dropTable(self::TABLE_NAME));
+        $db->createTable(self::TABLE_NAME);
+        $db->createColumn(self::TABLE_NAME, 'col1', AbstractMigration::TYPE_INT);
+        $db->createColumn(self::TABLE_NAME, 'col2', AbstractMigration::TYPE_TEXT);
+
+        // dispatch url
+        $this->dispatch('gen migration -c --whitelist=' . self::TABLE_NAME);
+
+        $this->assertResponseStatusCode(0);
+        $this->assertActionName('generate');
+        $this->assertControllerName('ZFCTool\Controller\Migration');
+        $this->assertControllerClass('MigrationController');
+        $this->assertMatchedRouteName('generate-migration');
+        $response = ob_get_contents();
+
+        $responseArray = explode(PHP_EOL, $response);
+        $migrationPath = str_replace(array('Migration generated: ', PHP_EOL), '', $responseArray[0]);
+        $this->assertTrue(is_file($migrationPath));
+
+        $migration = str_replace(array('Committed migration: ', PHP_EOL), '', $responseArray[1]);
+
+        $lastMigration = self::$manager->getLastMigration();
+        $this->assertArrayHasKey('migration', $lastMigration);
+        $this->assertNotEquals(0, $lastMigration['migration']);
+        $this->assertEquals($lastMigration['migration'], $migration);
+
+        self::$manager->down(null);
+
+        unlink($migrationPath);
+    }
+
+
+    public function testCommitMigration()
+    {
+        //Create table
+        $db = new Mysql(self::$db);
+        $db->query(Database::dropTable(self::TABLE_NAME));
+        $db->createTable(self::TABLE_NAME);
+        $db->createColumn(self::TABLE_NAME, 'col1', AbstractMigration::TYPE_INT);
+        $db->createColumn(self::TABLE_NAME, 'col2', AbstractMigration::TYPE_TEXT);
+
+        // Generate migration
+        $this->dispatch('gen migration --whitelist=' . self::TABLE_NAME . ' --module=' . self::FIXTURE_MODULE);
+        $this->assertResponseStatusCode(0);
+        $this->assertActionName('generate');
+        $this->assertControllerName('ZFCTool\Controller\Migration');
+        $this->assertControllerClass('MigrationController');
+        $this->assertMatchedRouteName('generate-migration');
+        $response = ob_get_contents();
+        $responseArray = explode(PHP_EOL, $response);
+
+        $migrationPath = str_replace(array('Migration generated: ', PHP_EOL), '', $responseArray[1]);
+        $this->assertTrue(is_file($migrationPath));
+        $path = self::$manager->getMigrationsDirectoryPath(self::FIXTURE_MODULE);
+        $migration = str_replace(array($path . '/', '.php'), '', $migrationPath);
+        ob_clean();
+
+        // dispatch url
+        $this->dispatch('ci migration ' . $migration . ' --module=' . self::FIXTURE_MODULE);
+        $this->assertActionName('commit');
+        $this->assertControllerName('ZFCTool\Controller\Migration');
+        $this->assertControllerClass('MigrationController');
+        $this->assertMatchedRouteName('commit-migration');
+        $response = ob_get_contents();
+        $responseArray = explode(PHP_EOL, $response);
+
+        $this->assertEquals(
+            $migration,
+            str_replace(array('Migration "', '" committed', PHP_EOL), '', $responseArray[1])
+        );
+        $lastMigration = self::$manager->getLastMigration(self::FIXTURE_MODULE);
+        $this->assertArrayHasKey('migration', $lastMigration);
+        $this->assertNotEquals(0, $lastMigration['migration']);
+        $this->assertEquals($lastMigration['migration'], $migration);
+
+        self::$manager->down(self::FIXTURE_MODULE, null);
+
+        unlink($migrationPath);
+    }
 //    public function testGenMigration()
 //    {
 //        // dispatch url
@@ -148,5 +310,101 @@ class MigrationControllerTest extends AbstractConsoleControllerTestCase
         $this->assertControllerName('ZFCTool\Controller\Migration');
         $this->assertControllerClass('MigrationController');
         $this->assertMatchedRouteName('down-db');
+    }
+
+    public function testUpDownModuleDb()
+    {
+        // dispatch url
+        $this->dispatch('up db --module=' . self::FIXTURE_MODULE);
+
+        $this->assertResponseStatusCode(0);
+        $this->assertActionName('up');
+        $this->assertControllerName('ZFCTool\Controller\Migration');
+        $this->assertControllerClass('MigrationController');
+        $this->assertMatchedRouteName('up-db');
+
+        // dispatch url
+        $this->dispatch('down db --module=' . self::FIXTURE_MODULE);
+
+        $this->assertResponseStatusCode(0);
+        $this->assertActionName('down');
+        $this->assertControllerName('ZFCTool\Controller\Migration');
+        $this->assertControllerClass('MigrationController');
+        $this->assertMatchedRouteName('down-db');
+    }
+
+    public function testRollbackModuleDb()
+    {
+        // dispatch url
+        $this->dispatch('up db --module=' . self::FIXTURE_MODULE);
+
+        $this->assertResponseStatusCode(0);
+        $this->assertActionName('up');
+        $this->assertControllerName('ZFCTool\Controller\Migration');
+        $this->assertControllerClass('MigrationController');
+        $this->assertMatchedRouteName('up-db');
+
+        // dispatch url
+        $this->dispatch('back db --step=5 --module=' . self::FIXTURE_MODULE);
+
+        $this->assertResponseStatusCode(0);
+        $this->assertActionName('rollback');
+        $this->assertControllerName('ZFCTool\Controller\Migration');
+        $this->assertControllerClass('MigrationController');
+        $this->assertMatchedRouteName('rollback-db');
+    }
+
+    public function testRollbackModuleDbEmptyStep()
+    {
+        // dispatch url
+        $this->dispatch('rollback db');
+
+        $this->assertResponseStatusCode(0);
+        $this->assertActionName('rollback');
+        $this->assertControllerName('ZFCTool\Controller\Migration');
+        $this->assertControllerClass('MigrationController');
+        $this->assertMatchedRouteName('rollback-db');
+
+        $response = ob_get_contents();
+        $this->assertContains('No migrations to rollback.', $response);
+    }
+
+
+    public function testDiffModuleDb()
+    {
+        $db = new Mysql(self::$db);
+
+        $db->query(Database::dropTable(self::TABLE_NAME));
+        $db->createTable(self::TABLE_NAME);
+        $db->createColumn(self::TABLE_NAME, 'col1', AbstractMigration::TYPE_INT);
+        $db->createColumn(self::TABLE_NAME, 'col2', AbstractMigration::TYPE_TEXT);
+
+        // dispatch url
+        $this->dispatch('diff db --module=' . self::FIXTURE_MODULE . ' --whitelist=' . self::TABLE_NAME);
+
+        $this->assertResponseStatusCode(0);
+        $this->assertActionName('diff');
+        $this->assertControllerName('ZFCTool\Controller\Migration');
+        $this->assertControllerClass('MigrationController');
+        $this->assertMatchedRouteName('diff-db');
+
+        $response = ob_get_contents();
+        $this->assertContains('Queries (2) :', $response);
+        $db->query(Database::dropTable(self::TABLE_NAME));
+    }
+
+    public function testEmptyDiffModuleDb()
+    {
+        // dispatch url
+        $this->dispatch('diff db --module=' . self::FIXTURE_MODULE . ' --whitelist=' . self::TABLE_NAME);
+
+        $this->assertResponseStatusCode(0);
+        $this->assertActionName('diff');
+        $this->assertControllerName('ZFCTool\Controller\Migration');
+        $this->assertControllerClass('MigrationController');
+        $this->assertMatchedRouteName('diff-db');
+
+        $response = ob_get_contents();
+        $this->assertContains('Your database has no changes from last revision!', $response);
     }
 }
