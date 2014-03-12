@@ -8,15 +8,53 @@ namespace ZFCToolTest\Controller;
 
 use ZFCToolTest\Bootstrap;
 use ZFCTool\Service\MigrationManager;
+use Zend\Db\Adapter\Adapter;
 use Zend\Test\PHPUnit\Controller\AbstractConsoleControllerTestCase;
 
 class MigrationControllerTest extends AbstractConsoleControllerTestCase
 {
     const FIXTURE_MODULE = 'simplemodule';
 
+    protected $verbose = false;
+
+    /**
+     * @var MigrationManager
+     */
+    protected static $manager;
+
+    /**
+     * @var \Zend\Db\Adapter\Adapter
+     */
+    protected static $db;
+
+    public static function setUpBeforeClass()
+    {
+        /** @var $serviceManager \Zend\ServiceManager\ServiceManager */
+        $serviceManager = Bootstrap::getServiceManager();
+        self::$manager = new MigrationManager($serviceManager);
+        self::$db = $serviceManager->get('Zend\Db\Adapter\Adapter');
+    }
+
+    public static function tearDownAfterClass()
+    {
+        self::$db->query(
+            "DROP TABLE `" . self::$manager->getMigrationsSchemaTable() . "`",
+            Adapter::QUERY_MODE_EXECUTE
+        );
+    }
+
     public function setUp()
     {
         $this->setApplicationConfig(Bootstrap::getConfig());
+        parent::setUp();
+        //Disabling output in console
+        (!$this->verbose) && ob_start();
+    }
+
+    public function tearDown()
+    {
+        (!$this->verbose) && ob_end_clean();
+        parent::tearDown();
     }
 
     public function testLsMigrations()

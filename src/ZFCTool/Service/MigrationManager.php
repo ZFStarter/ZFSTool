@@ -125,6 +125,14 @@ class MigrationManager
         array_push($this->messages, $messages);
     }
 
+    /**
+     * Clear all messages
+     */
+    public function clearMessages()
+    {
+        $this->messages = array();
+    }
+
 
     /**
      * Method return application directory path

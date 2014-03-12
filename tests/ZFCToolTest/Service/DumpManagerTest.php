@@ -29,56 +29,76 @@ class DumpManagerTest extends \PHPUnit_Framework_TestCase
     /**
      * @var DumpManager
      */
-    protected $manager;
+    protected static $manager;
 
     /**
      * @var \Zend\Db\Adapter\Adapter
      */
-    protected $db;
+    protected static $db;
 
 
-    protected function setUp()
+    public static function setUpBeforeClass()
     {
         /** @var $serviceManager \Zend\ServiceManager\ServiceManager */
         $serviceManager = Bootstrap::getServiceManager();
-        $this->manager = new DumpManager($serviceManager);
-        $this->db = $serviceManager->get('Zend\Db\Adapter\Adapter');
+        self::$manager = new DumpManager($serviceManager);
+        self::$db = $serviceManager->get('Zend\Db\Adapter\Adapter');
     }
 
 
     public function testSetModulesDirectoryPath()
     {
-        $this->manager->setModulesDirectoryPath('/test/path');
-        $this->assertEquals('/test/path', $this->manager->getModulesDirectoryPath());
+        //Store
+        $modulesDirectoryPath = self::$manager->getModulesDirectoryPath();
+
+        self::$manager->setModulesDirectoryPath('/test/path');
+        $this->assertEquals('/test/path', self::$manager->getModulesDirectoryPath());
+        //Restore
+        self::$manager->setModulesDirectoryPath($modulesDirectoryPath);
     }
 
 
     public function testSetProjectDirectoryPath()
     {
-        $this->manager->setProjectDirectoryPath('/test/path');
-        $this->assertEquals('/test/path', $this->manager->getProjectDirectoryPath());
+        //Store
+        $projectDirectoryPath = self::$manager->getProjectDirectoryPath();
+
+        self::$manager->setProjectDirectoryPath('/test/path');
+        $this->assertEquals('/test/path', self::$manager->getProjectDirectoryPath());
+        //Restore
+        self::$manager->setProjectDirectoryPath($projectDirectoryPath);
     }
 
 
     public function testGetProjectDirectoryPathExceptions()
     {
-        $this->manager->setProjectDirectoryPath(null);
+        //Store
+        $projectDirectoryPath = self::$manager->getProjectDirectoryPath();
+
+        self::$manager->setProjectDirectoryPath(null);
         try {
-            $this->manager->getProjectDirectoryPath();
+            self::$manager->getProjectDirectoryPath();
         } catch (ZFCToolException $expected) {
+            //Restore
+            self::$manager->setProjectDirectoryPath($projectDirectoryPath);
             $this->assertTrue(true);
             return;
         }
+
         $this->fail('An expected Exception has not been raised.');
     }
 
 
     public function testGetModulesDirectoryPathByModuleExceptions()
     {
-        $this->manager->setModulesDirectoryPath(null);
+        //Store
+        $modulesDirectoryPath = self::$manager->getModulesDirectoryPath();
+        self::$manager->setModulesDirectoryPath(null);
         try {
-            $this->manager->getModulesDirectoryPath();
+            self::$manager->getModulesDirectoryPath();
         } catch (ZFCToolException $expected) {
+            //Restore
+            self::$manager->setModulesDirectoryPath($modulesDirectoryPath);
             $this->assertTrue(true);
             return;
         }
@@ -88,13 +108,18 @@ class DumpManagerTest extends \PHPUnit_Framework_TestCase
 
     public function testGetDumpsDirectoryNameExceptions()
     {
-        $this->manager->setDumpsDirectoryName(null);
+        //Store
+        $dumpsDirectoryName = self::$manager->getDumpsDirectoryName();
+        self::$manager->setDumpsDirectoryName(null);
         try {
-            $this->manager->getDumpsDirectoryName();
+            self::$manager->getDumpsDirectoryName();
         } catch (ZFCToolException $expected) {
             $this->assertTrue(true);
+            //Restore
+            self::$manager->setDumpsDirectoryName($dumpsDirectoryName);
             return;
         }
+
         $this->fail('An expected Exception has not been raised.');
     }
 
@@ -102,7 +127,7 @@ class DumpManagerTest extends \PHPUnit_Framework_TestCase
     public function testGetDumpsDirectoryPathExceptions()
     {
         try {
-            $this->manager->getDumpsDirectoryPath('unknownModule');
+            self::$manager->getDumpsDirectoryPath('unknownModule');
         } catch (ZFCToolException $expected) {
             $this->assertTrue(true);
             return;
@@ -112,7 +137,7 @@ class DumpManagerTest extends \PHPUnit_Framework_TestCase
 
     public function testCreateSuccess()
     {
-        $db = new Mysql($this->db);
+        $db = new Mysql(self::$db);
 
         $db->query(Database::dropTable(self::TABLE_NAME));
         $db->createTable(self::TABLE_NAME);
@@ -133,7 +158,7 @@ class DumpManagerTest extends \PHPUnit_Framework_TestCase
 
         $db->insert(self::TABLE_NAME, $testData);
 
-        $dumpName = $this->manager->create(
+        $dumpName = self::$manager->create(
             self::FIXTURE_MODULE, self::DUMP_FILE_NAME, self::TABLE_NAME, 'test_black_table1,test_black_table2'
         );
 
@@ -143,7 +168,7 @@ class DumpManagerTest extends \PHPUnit_Framework_TestCase
 
         $this->assertEquals(self::DUMP_FILE_NAME, $dumpName);
 
-        $dumpFullPath = $this->manager->getDumpsDirectoryPath(self::FIXTURE_MODULE)
+        $dumpFullPath = self::$manager->getDumpsDirectoryPath(self::FIXTURE_MODULE)
             . DIRECTORY_SEPARATOR . $dumpName;
 
         if (file_exists($dumpFullPath)) {
@@ -154,8 +179,8 @@ class DumpManagerTest extends \PHPUnit_Framework_TestCase
         }
 
         //Test generate name and creating file
-        $dumpName = $this->manager->create(null, null, self::TABLE_NAME, 'test_black_table1,test_black_table2');
-        $dumpFullPath = $this->manager->getDumpsDirectoryPath() . DIRECTORY_SEPARATOR . $dumpName;
+        $dumpName = self::$manager->create(null, null, self::TABLE_NAME, 'test_black_table1,test_black_table2');
+        $dumpFullPath = self::$manager->getDumpsDirectoryPath() . DIRECTORY_SEPARATOR . $dumpName;
 
         if (file_exists($dumpFullPath)) {
             $dump = file_get_contents($dumpFullPath);
@@ -174,7 +199,7 @@ class DumpManagerTest extends \PHPUnit_Framework_TestCase
     public function testCreateEmptyDumpException()
     {
         try {
-            $this->manager->create(null, null, 'fake');
+            self::$manager->create(null, null, 'fake');
         } catch (EmptyDumpException $expected) {
             $this->assertTrue(true);
             return;
@@ -188,17 +213,17 @@ class DumpManagerTest extends \PHPUnit_Framework_TestCase
      */
     public function testImportSuccess()
     {
-        $dumpFullPath = $this->manager->getDumpsDirectoryPath(self::FIXTURE_MODULE)
+        $dumpFullPath = self::$manager->getDumpsDirectoryPath(self::FIXTURE_MODULE)
             . DIRECTORY_SEPARATOR . self::DUMP_FILE_NAME;
         if (is_file($dumpFullPath)) {
 
-            $this->manager->import(self::DUMP_FILE_NAME, self::FIXTURE_MODULE);
+            self::$manager->import(self::DUMP_FILE_NAME, self::FIXTURE_MODULE);
 
-            $result = $this->db->query("SHOW TABLES LIKE '" . self::TABLE_NAME . "';", Adapter::QUERY_MODE_EXECUTE);
+            $result = self::$db->query("SHOW TABLES LIKE '" . self::TABLE_NAME . "';", Adapter::QUERY_MODE_EXECUTE);
 
             $this->assertEquals(1, $result->count());
             unlink($dumpFullPath);
-            $db = new Mysql($this->db);
+            $db = new Mysql(self::$db);
             $db->dropTable(self::TABLE_NAME);
         } else {
             $this->fail('Dump file not exist!');
@@ -209,7 +234,7 @@ class DumpManagerTest extends \PHPUnit_Framework_TestCase
     public function testImportFail()
     {
         try {
-            $this->manager->import('', null);
+            self::$manager->import('', null);
         } catch (DumpNotFound $expected) {
             $this->assertTrue(true);
             return;
