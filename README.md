@@ -2,6 +2,13 @@
 
 [![Build Status](https://travis-ci.org/naxel/ZFCTool.png?branch=master)](https://travis-ci.org/naxel/ZFCTool)
 
+[![Dependency Status](https://www.versioneye.com/user/projects/5320a03fec1375be8b00034d/badge.png)](https://www.versioneye.com/user/projects/5320a03fec1375be8b00034d)
+
+[![Latest Stable Version](https://poser.pugx.org/naxel/zfctool/v/stable.png)](https://packagist.org/packages/naxel/zfctool)
+[![Total Downloads](https://poser.pugx.org/naxel/zfctool/downloads.png)](https://packagist.org/packages/naxel/zfctool)
+[![Latest Unstable Version](https://poser.pugx.org/naxel/zfctool/v/unstable.png)](https://packagist.org/packages/naxel/zfctool)
+[![License](https://poser.pugx.org/naxel/zfctool/license.png)](https://packagist.org/packages/naxel/zfctool)
+
 
 ZFCTool - Zend Framework 2 command line Tool
 

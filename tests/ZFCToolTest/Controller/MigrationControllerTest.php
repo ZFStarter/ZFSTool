@@ -122,7 +122,9 @@ class MigrationControllerTest extends AbstractConsoleControllerTestCase
         $this->assertMatchedRouteName('generate-migration');
         $response = ob_get_contents();
 
-        $migrationPath = str_replace(array('Migration created: ', PHP_EOL), '', $response);
+        preg_match("/[\S]*\.php/i", $response, $matches);
+        $this->assertNotEmpty($matches);
+        $migrationPath = $matches[0];
         $this->assertTrue(is_file($migrationPath));
 
         unlink($migrationPath);
@@ -142,15 +144,9 @@ class MigrationControllerTest extends AbstractConsoleControllerTestCase
 
         $this->assertContains('Only for module "' . self::FIXTURE_MODULE . '":', $response);
 
-        $migrationPath = str_replace(
-            array(
-                'Migration created: ',
-                PHP_EOL,
-                'Only for module "' . self::FIXTURE_MODULE . '":'
-            )
-            , '', $response
-        );
-
+        preg_match("/[\S]*\.php/i", $response, $matches);
+        $this->assertNotEmpty($matches);
+        $migrationPath = $matches[0];
         $this->assertTrue(is_file($migrationPath));
 
         unlink($migrationPath);
@@ -176,7 +172,9 @@ class MigrationControllerTest extends AbstractConsoleControllerTestCase
         $this->assertMatchedRouteName('generate-migration');
         $response = ob_get_contents();
 
-        $migrationPath = str_replace(array('Migration generated: ', PHP_EOL), '', $response);
+        preg_match("/[\S]*\.php/i", $response, $matches);
+        $this->assertNotEmpty($matches);
+        $migrationPath = $matches[0];
         $this->assertTrue(is_file($migrationPath));
 
         unlink($migrationPath);
@@ -203,11 +201,14 @@ class MigrationControllerTest extends AbstractConsoleControllerTestCase
         $this->assertMatchedRouteName('generate-migration');
         $response = ob_get_contents();
 
-        $responseArray = explode(PHP_EOL, $response);
-        $migrationPath = str_replace(array('Migration generated: ', PHP_EOL), '', $responseArray[0]);
+        preg_match("/[\S]*\.php/i", $response, $matches);
+        $this->assertTrue(isset($matches[0]));
+        $migrationPath = $matches[0];
         $this->assertTrue(is_file($migrationPath));
 
-        $migration = str_replace(array('Committed migration: ', PHP_EOL), '', $responseArray[1]);
+        preg_match("/\d\d\d\d\d\d\d\d_\d\d\d\d\d\d_\d\d/i", $migrationPath, $matches);
+        $this->assertNotEmpty($matches);
+        $migration = $matches[0];
 
         $lastMigration = self::$manager->getLastMigration();
         $this->assertArrayHasKey('migration', $lastMigration);
@@ -222,29 +223,7 @@ class MigrationControllerTest extends AbstractConsoleControllerTestCase
 
     public function testCommitMigration()
     {
-        //Create table
-        $db = new Mysql(self::$db);
-        $db->query(Database::dropTable(self::TABLE_NAME));
-        $db->createTable(self::TABLE_NAME);
-        $db->createColumn(self::TABLE_NAME, 'col1', AbstractMigration::TYPE_INT);
-        $db->createColumn(self::TABLE_NAME, 'col2', AbstractMigration::TYPE_TEXT);
-
-        // Generate migration
-        $this->dispatch('gen migration --whitelist=' . self::TABLE_NAME . ' --module=' . self::FIXTURE_MODULE);
-        $this->assertResponseStatusCode(0);
-        $this->assertActionName('generate');
-        $this->assertControllerName('ZFCTool\Controller\Migration');
-        $this->assertControllerClass('MigrationController');
-        $this->assertMatchedRouteName('generate-migration');
-        $response = ob_get_contents();
-        $responseArray = explode(PHP_EOL, $response);
-
-        $migrationPath = str_replace(array('Migration generated: ', PHP_EOL), '', $responseArray[1]);
-        $this->assertTrue(is_file($migrationPath));
-        $path = self::$manager->getMigrationsDirectoryPath(self::FIXTURE_MODULE);
-        $migration = str_replace(array($path . '/', '.php'), '', $migrationPath);
-        ob_clean();
-
+        $migration = '99999999_100000_00';
         // dispatch url
         $this->dispatch('ci migration ' . $migration . ' --module=' . self::FIXTURE_MODULE);
         $this->assertActionName('commit');
@@ -252,32 +231,21 @@ class MigrationControllerTest extends AbstractConsoleControllerTestCase
         $this->assertControllerClass('MigrationController');
         $this->assertMatchedRouteName('commit-migration');
         $response = ob_get_contents();
-        $responseArray = explode(PHP_EOL, $response);
 
-        $this->assertEquals(
-            $migration,
-            str_replace(array('Migration "', '" committed', PHP_EOL), '', $responseArray[1])
-        );
+        preg_match("/\d\d\d\d\d\d\d\d_\d\d\d\d\d\d_\d\d/i", $response, $matches);
+        $this->assertNotEmpty($matches);
+
+        $this->assertEquals($migration, $matches[0]);
         $lastMigration = self::$manager->getLastMigration(self::FIXTURE_MODULE);
         $this->assertArrayHasKey('migration', $lastMigration);
         $this->assertNotEquals(0, $lastMigration['migration']);
         $this->assertEquals($lastMigration['migration'], $migration);
 
-        self::$manager->down(self::FIXTURE_MODULE, null);
-
-        unlink($migrationPath);
+        self::$db->query(
+            "DROP TABLE `" . self::$manager->getMigrationsSchemaTable() . "`",
+            Adapter::QUERY_MODE_EXECUTE
+        );
     }
-//    public function testGenMigration()
-//    {
-//        // dispatch url
-//        $this->dispatch('gen migration');
-//
-//        $this->assertResponseStatusCode(0);
-//        $this->assertActionName('generate');
-//        $this->assertControllerName('ZFCTool\Controller\Migration');
-//        $this->assertControllerClass('MigrationController');
-//        $this->assertMatchedRouteName('generate-migration');
-//    }
 
     public function testShowMigration()
     {

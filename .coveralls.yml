@@ -1,0 +1,4 @@
+src_dir: src
+coverage_clover: build/result/clover.xml
+json_path: build/coveralls.json
+service_name: travis-ci

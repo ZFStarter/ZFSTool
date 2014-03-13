@@ -191,8 +191,9 @@ class MigrationController extends AbstractActionController
                 }
 
                 if ($commit) {
-                    $path = $this->manager->getMigrationsDirectoryPath($module);
-                    $migration = str_replace(array($path . '/', '.php'), '', $migrationPath);
+
+                    preg_match("/\d\d\d\d\d\d\d\d_\d\d\d\d\d\d_\d\d/i", $migrationPath, $matches);
+                    $migration = $matches[0];
                     $this->manager->commit($module, $migration);
                     $this->console->writeLine('Committed migration: ' . $migration, Color::GREEN);
                 }
