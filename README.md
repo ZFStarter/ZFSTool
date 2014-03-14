@@ -9,6 +9,7 @@
 [![Latest Unstable Version](https://poser.pugx.org/naxel/zfctool/v/unstable.png)](https://packagist.org/packages/naxel/zfctool)
 [![License](https://poser.pugx.org/naxel/zfctool/license.png)](https://packagist.org/packages/naxel/zfctool)
 
+[![Coverage Status](https://coveralls.io/repos/naxel/ZFCTool/badge.png?branch=master)](https://coveralls.io/r/naxel/ZFCTool?branch=master)
 
 ZFCTool - Zend Framework 2 command line Tool
 
