@@ -10,7 +10,6 @@ use Zend\Db\Adapter\Adapter;
 use ZFCTool\Exception\ZFCToolException;
 use ZFCTool\Service\Migration\Adapter\AbstractAdapter;
 use Zend\Db\Adapter\Driver\Pdo\Pdo;
-use ZFCTool\Service\Migration\Adapter\Mysql;
 use ZFCTool\Service\MigrationManager;
 
 abstract class AbstractMigration
@@ -60,14 +59,14 @@ abstract class AbstractMigration
      *
      * @var AbstractAdapter
      */
-    protected $_migrationAdapter = null;
+    protected $migrationAdapter = null;
 
     /**
      * migration manager
      *
      * @var MigrationManager
      */
-    protected $_migrationManager = null;
+    protected $migrationManager = null;
 
 
     /**
@@ -115,7 +114,7 @@ abstract class AbstractMigration
      */
     public function setMigrationManager(MigrationManager $migrationManager)
     {
-        $this->_migrationManager = $migrationManager;
+        $this->migrationManager = $migrationManager;
         return $this;
     }
 
@@ -128,10 +127,10 @@ abstract class AbstractMigration
      */
     public function getMigrationManager()
     {
-        if (!$this->_migrationManager) {
+        if (!$this->migrationManager) {
             throw new ZFCToolException('Migration manager is not set');
         }
-        return $this->_migrationManager;
+        return $this->migrationManager;
     }
 
 
@@ -153,7 +152,7 @@ abstract class AbstractMigration
         } else {
             throw new ZFCToolException("This type of adapter not suppotred");
         }
-        $this->_migrationAdapter = new $className($this->getDbAdapter());
+        $this->migrationAdapter = new $className($this->getDbAdapter());
 
         return $this;
     }
@@ -161,14 +160,14 @@ abstract class AbstractMigration
     /**
      * getMigrationAdapter
      *
-     * @return Adapter
+     * @return AbstractAdapter
      */
     public function getMigrationAdapter()
     {
-        if (!$this->_migrationAdapter) {
+        if (!$this->migrationAdapter) {
             $this->setMigrationAdapter();
         }
-        return $this->_migrationAdapter;
+        return $this->migrationAdapter;
     }
 
 
@@ -266,8 +265,7 @@ abstract class AbstractMigration
         $default = null,
         $nullable = true,
         $primary = false
-    )
-    {
+    ) {
         //if ($default && self::DEFAULT_CURRENT_TIMESTAMP == $default) {
         //    $default = $this->getMigrationAdapter()->getCurrentTimestamp();
         //}

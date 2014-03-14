@@ -83,7 +83,7 @@ class MigrationController extends AbstractActionController
         $controller = $this;
         $events->attach('dispatch', function ($e) use ($controller) {
 
-            /** @var ConsoleRequest */
+            /** @var \Zend\Mvc\MvcEvent $e */
             $request = $e->getRequest();
 
             if (!$request instanceof ConsoleRequest) {
@@ -304,10 +304,12 @@ class MigrationController extends AbstractActionController
             if (!empty($result)) {
                 $this->console->writeLine('Queries (' . sizeof($result['up']) . ') :' . PHP_EOL);
 
-                if (sizeof($result['up']) > 0)
+                if (sizeof($result['up']) > 0) {
                     foreach ($result['up'] as $diff) {
                         $this->console->writeLine(stripcslashes($diff) . PHP_EOL);
                     }
+                }
+
 
             } else {
                 $this->console->writeLine('Your database has no changes from last revision!');

@@ -6,19 +6,15 @@
 
 namespace ZFCTool\Service;
 
-use Zend\ServiceManager\Exception\ServiceNotFoundException;
 use Zend\Code\Generator\ClassGenerator;
 use Zend\Code\Generator\DocBlockGenerator;
 use Zend\Code\Generator\FileGenerator;
 use Zend\Code\Generator\MethodGenerator;
-
 use Zend\Db\Sql\Ddl;
 use Zend\Db\Sql\Sql;
 use Zend\Db\Sql\Where;
 use Zend\Db\Adapter\Driver\StatementInterface;
 use Zend\Db\Adapter\Adapter;
-use Zend\Db\Metadata\Metadata;
-
 use Zend\ServiceManager\ServiceLocatorInterface;
 
 use ZFCTool\Exception\ConflictedMigrationException;
@@ -31,10 +27,8 @@ use ZFCTool\Exception\ZFCToolException;
 use ZFCTool\Exception\CurrentMigrationException;
 use ZFCTool\Exception\IncorrectMigrationNameException;
 use ZFCTool\Exception\MigrationNotExistsException;
-
 use ZFCTool\Service\Migration\AbstractMigration;
 use ZFCTool\Service\Database\Diff;
-
 
 class MigrationManager
 {
@@ -84,14 +78,14 @@ class MigrationManager
      *
      * @var bool
      */
-    protected $_transactionFlag = false;
+    protected $transactionFlag = false;
 
 
     /**
      * @param $serviceLocator
      * @throws ZFCToolException
      */
-    function __construct($serviceLocator)
+    public function __construct($serviceLocator)
     {
         $this->serviceLocator = $serviceLocator;
 
@@ -284,28 +278,28 @@ class MigrationManager
     {
         $path = $this->getMigrationsDirectoryPath($module);
 
-        list($sec, $msec) = explode(".", microtime(true));
-        $migrationName = date('Ymd_His_') . substr($msec, 0, 2);
+        list(, $mSec) = explode(".", microtime(true));
+        $migrationName = date('Ymd_His_') . substr($mSec, 0, 2);
 
 
         $methodUp = array(
             'name' => 'up',
             'docblock' => DocBlockGenerator::fromArray(
-                    array(
-                        'shortDescription' => 'Upgrade',
-                        'longDescription' => null,
-                    )
-                ),
+                array(
+                    'shortDescription' => 'Upgrade',
+                    'longDescription' => null,
+                )
+            ),
         );
 
         $methodDown = array(
             'name' => 'down',
             'docblock' => DocBlockGenerator::fromArray(
-                    array(
-                        'shortDescription' => 'Degrade',
-                        'longDescription' => null,
-                    )
-                ),
+                array(
+                    'shortDescription' => 'Degrade',
+                    'longDescription' => null,
+                )
+            ),
         );
 
 
@@ -428,7 +422,7 @@ class MigrationManager
      * @param $str
      * @return array
      */
-    protected function _strToArray($str)
+    protected function strToArray($str)
     {
         if (!empty($str)) {
 
@@ -580,10 +574,10 @@ class MigrationManager
     {
         $blkListedTables = array();
         $blkListedTables[] = $this->options['migrationsSchemaTable'];
-        $blkListedTables = array_merge($blkListedTables, $this->_strToArray($blacklist));
+        $blkListedTables = array_merge($blkListedTables, $this->strToArray($blacklist));
 
         $whtListedTables = array();
-        $whtListedTables = array_merge($whtListedTables, $this->_strToArray($whitelist));
+        $whtListedTables = array_merge($whtListedTables, $this->strToArray($whitelist));
 
         $options = array();
         $options['blacklist'] = $blkListedTables;
@@ -641,7 +635,7 @@ class MigrationManager
                 throw new MigrationExecutedException("Migration `$migration` already executed");
             }
 
-            $this->_pushMigration($module, $migration);
+            $this->pushMigration($module, $migration);
 
             // add db state to migration
             $this->updateDbState($module, $migration);
@@ -671,7 +665,7 @@ class MigrationManager
      * @param string $migration Migration name
      * @return $this
      */
-    protected function _pushMigration($module, $migration)
+    protected function pushMigration($module, $migration)
     {
         if (null === $module) {
             $module = '';
@@ -704,7 +698,7 @@ class MigrationManager
      * @param string $migration Migration name
      * @return $this
      */
-    protected function _pullMigration($module, $migration)
+    protected function pullMigration($module, $migration)
     {
         if (null === $module) {
             $module = '';
@@ -753,8 +747,9 @@ class MigrationManager
 //            } elseif ($lastMigration == $to) {
 //                throw new CurrentMigrationException("Migration `$to` is current");
             } elseif ($lastMigration < $to) {
-                throw new YoungMigrationException("Migration `$to` is younger than current "
-                    . "migration `$lastMigration`");
+                throw new YoungMigrationException(
+                    "Migration `$to` is younger than current migration `$lastMigration`"
+                );
             }
         }
 
@@ -785,11 +780,11 @@ class MigrationManager
                 /** @var AbstractMigration $migrationObject */
                 $migrationObject->setMigrationManager($this);
 
-                if (!$this->_transactionFlag) {
+                if (!$this->transactionFlag) {
                     $connection = $migrationObject->getDbAdapter()->getDriver()->getConnection();
                     $connection->beginTransaction();
 
-                    $this->_transactionFlag = true;
+                    $this->transactionFlag = true;
                     try {
                         $migrationObject->down();
                         $connection->commit();
@@ -800,7 +795,7 @@ class MigrationManager
                             . $e->getMessage() . ' in ' . $e->getFile() . '#' . $e->getLine()
                         );
                     }
-                    $this->_transactionFlag = false;
+                    $this->transactionFlag = false;
                 } else {
                     $migrationObject->down();
                 }
@@ -811,7 +806,7 @@ class MigrationManager
                     $this->addMessage("Degrade revision `$migration`");
                 }
 
-                $this->_pullMigration($module, $migration);
+                $this->pullMigration($module, $migration);
             } catch (\Exception $e) {
                 throw new ZFCToolException(
                     "Migration `$module`.`$migration` return exception:\n"
@@ -851,8 +846,9 @@ class MigrationManager
             } elseif ($lastMigration == $to) {
                 throw new CurrentMigrationException("Migration `$to` is current");
             } elseif ($lastMigration > $to) {
-                throw new OldMigrationException("Migration `$to` is older than current "
-                    . "migration `$lastMigration`");
+                throw new OldMigrationException(
+                    "Migration `$to` is older than current migration `$lastMigration`"
+                );
             }
         }
 
@@ -892,10 +888,10 @@ class MigrationManager
                 $migrationObject = new $migrationClass($this->db);
                 $migrationObject->setMigrationManager($this);
 
-                if (!$this->_transactionFlag) {
+                if (!$this->transactionFlag) {
                     $connection = $migrationObject->getDbAdapter()->getDriver()->getConnection();
                     $connection->beginTransaction();
-                    $this->_transactionFlag = true;
+                    $this->transactionFlag = true;
                     try {
                         $migrationObject->up();
                         $connection->commit();
@@ -906,7 +902,7 @@ class MigrationManager
                             . $e->getMessage() . ' in ' . $e->getFile() . '#' . $e->getLine()
                         );
                     }
-                    $this->_transactionFlag = false;
+                    $this->transactionFlag = false;
                 } else {
                     $migrationObject->up();
                 }
@@ -917,7 +913,7 @@ class MigrationManager
                     $this->addMessage("Upgrade to revision `$migration`");
                 }
 
-                $this->_pushMigration($module, $migration);
+                $this->pushMigration($module, $migration);
 
                 // add db state to migration
                 $this->updateDbState($module, $migration);
@@ -1017,7 +1013,7 @@ class MigrationManager
 
                 $this->addMessage("Degrade migration '$migration'");
 
-                $this->_pullMigration($module, $migration);
+                $this->pullMigration($module, $migration);
             } catch (\Exception $e) {
                 throw new ZFCToolException(
                     "Migration `$module`.`$migration` return exception:\n"

@@ -8,8 +8,6 @@ namespace ZFCTool\Service\Database;
 
 use Zend\Db\Adapter\Adapter;
 use ZFCTool\Service\Database;
-use Zend\Db\Sql\Ddl;
-use Zend\Db\Sql\Sql;
 use Zend\Db\Adapter\Driver\StatementInterface;
 
 class Diff
@@ -18,25 +16,25 @@ class Diff
     /**
      * @var Database
      */
-    protected $_currentDb;
+    protected $currentDb;
     /**
      * @var Database
      */
-    protected $_publishedDb;
+    protected $publishedDb;
 
     /**
      * @var array
      */
-    protected $_difference = array('up' => array(), 'down' => array());
+    protected $difference = array('up' => array(), 'down' => array());
 
-    protected $_createTables = array();
-    protected $_dropTables = array();
-    protected $_commonTables = array();
+    protected $createTables = array();
+    protected $dropTables = array();
+    protected $commonTables = array();
 
     /**
      * @var Adapter
      */
-    protected $_db;
+    protected $db;
 
 
     /**
@@ -46,11 +44,11 @@ class Diff
      */
     public function __construct(Adapter $adapter, $currentDb, $lastPublishedDb)
     {
-        /** @var $_db Adapter */
-        $this->_db = $adapter;
+        /** @var $db Adapter */
+        $this->db = $adapter;
 
-        $this->_currentDb = $currentDb;
-        $this->_publishedDb = $lastPublishedDb;
+        $this->currentDb = $currentDb;
+        $this->publishedDb = $lastPublishedDb;
     }
 
     /**
@@ -60,7 +58,7 @@ class Diff
     protected function up($query)
     {
         if (!empty($query)) {
-            $this->_difference['up'][] = $query;
+            $this->difference['up'][] = $query;
         }
     }
 
@@ -71,7 +69,7 @@ class Diff
     protected function down($query)
     {
         if (!empty($query)) {
-            $this->_difference['down'][] = $query;
+            $this->difference['down'][] = $query;
         }
     }
 
@@ -85,7 +83,7 @@ class Diff
 
         $this->compareCommonTablesScheme();
 
-        return $this->_difference;
+        return $this->difference;
     }
 
     /**
@@ -93,17 +91,17 @@ class Diff
      */
     protected function compareTables()
     {
-        $currentTables = $this->_currentDb->getTables();
-        $lastPublishedTables = $this->_publishedDb->getTables();
+        $currentTables = $this->currentDb->getTables();
+        $lastPublishedTables = $this->publishedDb->getTables();
 
-        $this->_createTables = array_diff_key($currentTables, $lastPublishedTables);
-        $this->_dropTables = array_diff_key($lastPublishedTables, $currentTables);
-        $this->_commonTables = array_intersect_key($currentTables, $lastPublishedTables);
+        $this->createTables = array_diff_key($currentTables, $lastPublishedTables);
+        $this->dropTables = array_diff_key($lastPublishedTables, $currentTables);
+        $this->commonTables = array_intersect_key($currentTables, $lastPublishedTables);
 
-        foreach ($this->_createTables as $tblName => $table) {
+        foreach ($this->createTables as $tblName => $table) {
             $this->addCreateTable($tblName);
         }
-        foreach ($this->_dropTables as $tblName => $table) {
+        foreach ($this->dropTables as $tblName => $table) {
             $this->addDropTable($tblName);
         }
 
@@ -139,17 +137,18 @@ class Diff
      */
     protected function compareCommonTablesScheme()
     {
-        if (sizeof($this->_commonTables) > 0)
-            foreach ($this->_commonTables as $tblName => $table) {
+        if (sizeof($this->commonTables) > 0) {
+            foreach ($this->commonTables as $tblName => $table) {
 
-                $currentTable = $this->_currentDb->getTableColumns($tblName);
-                $publishedTable = $this->_publishedDb->getTableColumns($tblName);
+                $currentTable = $this->currentDb->getTableColumns($tblName);
+                $publishedTable = $this->publishedDb->getTableColumns($tblName);
 
                 $this->createDifferenceInsideTable($tblName, $currentTable, $publishedTable);
 
 
                 $this->createIndexDifference($tblName);
             }
+        }
     }
 
     /**
@@ -168,7 +167,9 @@ class Diff
                 $this->up(Database::addColumn($table, $currCol));
                 $this->down(Database::dropColumn($table, $currCol));
             } else {
-                if ($currCol === $colForCompare) continue;
+                if ($currCol === $colForCompare) {
+                    continue;
+                }
                 $sql = Database::changeColumn($table, $currCol);
                 $this->up($sql);
                 $sql = Database::changeColumn($table, $colForCompare);
@@ -202,8 +203,8 @@ class Diff
      */
     protected function createIndexDifference($table)
     {
-        $currentIndexes = $this->_currentDb->getIndexList($table);
-        $publishedIndexes = $this->_publishedDb->getIndexList($table);
+        $currentIndexes = $this->currentDb->getIndexList($table);
+        $publishedIndexes = $this->publishedDb->getIndexList($table);
 
         foreach ($currentIndexes as $curIndex) {
             $indexForCompare = $this->findIndex($curIndex, $publishedIndexes);
@@ -300,7 +301,7 @@ class Diff
     protected function getConstraintForColumn($table, $colName)
     {
         /** @var $statement StatementInterface */
-        $statement = $this->_db->query("select database() as dbname");
+        $statement = $this->db->query("select database() as dbname");
         $results = $statement->execute();
         $row = $results->current();
 
@@ -330,11 +331,13 @@ class Diff
 
 
         /** @var $statement StatementInterface */
-        $statement = $this->_db->query($sql);
+        $statement = $this->db->query($sql);
         $results = $statement->execute();
         $row = $results->current();
 
-        if (!count($row)) return false;
+        if (!count($row)) {
+            return false;
+        }
 
         $constraint = array(
             'table' => $table,

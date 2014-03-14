@@ -11,7 +11,7 @@ abstract class AbstractAdapter
      *
      * @var Adapter
      */
-    protected $_dbAdapter = null;
+    protected $dbAdapter = null;
 
 
     /**
@@ -19,7 +19,7 @@ abstract class AbstractAdapter
      */
     public function __construct(Adapter $dbAdapter)
     {
-        $this->_dbAdapter = $dbAdapter;
+        $this->dbAdapter = $dbAdapter;
     }
 
     /**
@@ -31,7 +31,7 @@ abstract class AbstractAdapter
     protected function setDbAdapter($dbAdapter = null)
     {
         if ($dbAdapter && ($dbAdapter instanceof Adapter)) {
-            $this->_dbAdapter = $dbAdapter;
+            $this->dbAdapter = $dbAdapter;
         }
         return $this;
     }
@@ -43,10 +43,10 @@ abstract class AbstractAdapter
      */
     public function getDbAdapter()
     {
-        if (!$this->_dbAdapter) {
+        if (!$this->dbAdapter) {
             $this->setDbAdapter();
         }
-        return $this->_dbAdapter;
+        return $this->dbAdapter;
     }
 
     /**
@@ -118,13 +118,14 @@ abstract class AbstractAdapter
      * @param   bool $primary
      * @return  bool
      */
-    abstract public function createColumn($table,
-                                          $column,
-                                          $datatype,
-                                          $length = null,
-                                          $default = null,
-                                          $notnull = false,
-                                          $primary = false
+    abstract public function createColumn(
+        $table,
+        $column,
+        $datatype,
+        $length = null,
+        $default = null,
+        $notnull = false,
+        $primary = false
     );
 
 
@@ -164,7 +165,7 @@ abstract class AbstractAdapter
      *                          return AbstractAdapter
      * @return AbstractAdapter
      */
-    public function  __call($name, $arguments)
+    public function __call($name, $arguments)
     {
         return $this;
     }

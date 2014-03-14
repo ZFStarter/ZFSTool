@@ -43,7 +43,7 @@ class DumpManager
      * @param $serviceLocator
      * @throws ZFCToolException
      */
-    function __construct($serviceLocator)
+    public function __construct($serviceLocator)
     {
         $this->serviceLocator = $serviceLocator;
 
@@ -155,13 +155,14 @@ class DumpManager
         } else {
             $modulePath = $this->getModulesDirectoryPath() . '/' . $module;
 
-            if (!file_exists($modulePath))
+            if (!file_exists($modulePath)) {
                 throw new ZFCToolException('Module `' . $module . '` not exists.');
+            }
 
             $path = $modulePath . '/' . $this->getDumpsDirectoryName();
         }
 
-        $this->_preparePath($path);
+        $this->preparePath($path);
 
         return $path;
     }
@@ -172,10 +173,10 @@ class DumpManager
      *
      * @param string $path
      */
-    protected function _preparePath($path)
+    protected function preparePath($path)
     {
         if (!is_dir($path)) {
-            $this->_preparePath(dirname($path));
+            $this->preparePath(dirname($path));
             mkdir($path, 0777);
         }
     }
@@ -201,7 +202,7 @@ class DumpManager
             $path = $this->getDumpsDirectoryPath($module);
 
             if (!$name) {
-                list($sec, $mSec) = explode(".", microtime(true));
+                list(, $mSec) = explode(".", microtime(true));
                 $name = date('Ymd_His_') . substr($mSec, 0, 2) . '.sql';
             }
 
@@ -244,7 +245,7 @@ class DumpManager
      * @param $str
      * @return array
      */
-    protected function _strToArray($str)
+    protected function strToArray($str)
     {
         if (!empty($str)) {
 
@@ -267,10 +268,10 @@ class DumpManager
     protected function getOptions($whitelist = "", $blacklist = "")
     {
         $blkListedTables = array();
-        $blkListedTables = array_merge($blkListedTables, $this->_strToArray($blacklist));
+        $blkListedTables = array_merge($blkListedTables, $this->strToArray($blacklist));
 
         $whtListedTables = array();
-        $whtListedTables = array_merge($whtListedTables, $this->_strToArray($whitelist));
+        $whtListedTables = array_merge($whtListedTables, $this->strToArray($whitelist));
 
         $options = array();
 

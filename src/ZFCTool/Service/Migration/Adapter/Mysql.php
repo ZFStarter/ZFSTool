@@ -3,12 +3,10 @@ namespace ZFCTool\Service\Migration\Adapter;
 
 use Zend\Db\Adapter\Adapter;
 use ZFCTool\Exception\ZFCToolException;
-use ZFCTool\Service\Migration\Adapter\AbstractAdapter;
 use ZFCTool\Service\Migration\AbstractMigration;
 use Zend\Db\Metadata\Metadata;
 
 use Zend\Db\Sql\Sql;
-use Zend\Db\Sql\Where;
 use Zend\Db\Sql\Ddl;
 use Zend\Db\Sql\Ddl\Column;
 
@@ -27,7 +25,8 @@ class Mysql extends AbstractAdapter
             'CREATE TABLE ' .
             $table .
             ' ( `id` bigint NOT NULL AUTO_INCREMENT , PRIMARY KEY (`id`))' .
-            ' Engine=InnoDB', Adapter::QUERY_MODE_EXECUTE
+            ' Engine=InnoDB',
+            Adapter::QUERY_MODE_EXECUTE
         );
         return $this;
     }
@@ -66,8 +65,7 @@ class Mysql extends AbstractAdapter
         $default = null,
         $notnull = false,
         $primary = false
-    )
-    {
+    ) {
         // alter table $table add column $column $options
         // alter table `p_zfc`.`asd` add column `name` varchar(123) NOT NULL after `id`
         $column = $this->getDbAdapter()->getPlatform()->quoteIdentifier($column);
@@ -120,7 +118,8 @@ class Mysql extends AbstractAdapter
             // TODO: drop primary key, add primary key (`all keys`,`$column`)
             $primary = array();
             $constraints = $metadata->getConstraints($table);
-            foreach ($constraints AS $constraint) {
+            /** @var $constraint \Zend\Db\Metadata\Object\ConstraintObject */
+            foreach ($constraints as $constraint) {
                 if ($constraint->isPrimaryKey()) {
                     foreach ($constraint->getColumns() as $columnName) {
                         array_push($primary, $columnName);
@@ -129,7 +128,7 @@ class Mysql extends AbstractAdapter
             }
 
             if (sizeof($primary)) {
-                $keys = $quotedColumns = $this->_quoteIdentifierArray($primary);
+                $keys = $quotedColumns = $this->quoteIdentifierArray($primary);
                 $query .= ", drop primary key, add primary key ($keys, $column)";
             } else {
                 $query .= ", add primary key ($column)";
@@ -171,8 +170,8 @@ class Mysql extends AbstractAdapter
         if (!$indName) {
             $indName = strtoupper($table . '_' . implode('_', $columns));
         }
-        //quoting a columns 
-        $quotedColumns = $this->_quoteIdentifierArray($columns);
+        //quoting a columns
+        $quotedColumns = $this->quoteIdentifierArray($columns);
         $query = 'ALTER TABLE ' . $this->getDbAdapter()->getPlatform()->quoteIdentifier($table)
             . ' ADD UNIQUE ' . $this->getDbAdapter()->getPlatform()->quoteIdentifier($indName)
             . '(' . $quotedColumns . ')';
@@ -247,7 +246,7 @@ class Mysql extends AbstractAdapter
      * @param array $columns
      * @return string
      */
-    protected function _quoteIdentifierArray(array $columns)
+    protected function quoteIdentifierArray(array $columns)
     {
         $quotedColumns = array();
         foreach ($columns as $value) {

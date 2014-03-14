@@ -115,10 +115,11 @@ class Database
             $dump .= self::dropTable($tableName) . ';' . PHP_EOL;
             $dump .= self::createTable($tableName) . ';' . PHP_EOL;
 
-            if (sizeof($this->data[$tableName]) > 0)
+            if (sizeof($this->data[$tableName]) > 0) {
                 foreach ($this->data[$tableName] as $data) {
                     $dump .= self::insert($tableName, $data) . ';' . PHP_EOL;
                 }
+            }
         }
 
         return $dump;
@@ -139,12 +140,16 @@ class Database
         $indexes = array();
 
         foreach ($indexesData as $index) {
-            if (!isset($indexes[$index['Key_name']])) $indexes[$index['Key_name']] = array();
+            if (!isset($indexes[$index['Key_name']])) {
+                $indexes[$index['Key_name']] = array();
+            }
             $indexes[$index['Key_name']]['unique'] = !intval($index['Non_unique']);
             $indexes[$index['Key_name']]['type'] = $index['Index_type'];
             $indexes[$index['Key_name']]['name'] = $index['Key_name'];
             $indexes[$index['Key_name']]['table'] = $index['Table'];
-            if (!isset($indexes[$index['Key_name']]['fields'])) $indexes[$index['Key_name']]['fields'] = array();
+            if (!isset($indexes[$index['Key_name']]['fields'])) {
+                $indexes[$index['Key_name']]['fields'] = array();
+            }
             $indexes[$index['Key_name']]['fields'][$index['Seq_in_index']] =
                 array(
                     'name' => $index['Column_name'],
@@ -186,7 +191,9 @@ class Database
         $rows = $this->db->createStatement($sql)->execute();
         $row = $rows->current();
 
-        if (!count($row)) return false;
+        if (!count($row)) {
+            return false;
+        }
 
         $constraint = array(
             'table' => $table,
@@ -263,8 +270,9 @@ class Database
      */
     public function deleteTable($tableName)
     {
-        if (array_key_exists($tableName, $this->scheme))
+        if (array_key_exists($tableName, $this->scheme)) {
             unset($this->scheme[$tableName]);
+        }
     }
 
     /**
@@ -319,19 +327,21 @@ class Database
             $this->indexes = $dec['indexes'];
             $dec = $dec['data'];
 
-            if (!empty($this->blackList))
+            if (!empty($this->blackList)) {
                 foreach ($this->blackList as $deleteKey) {
                     if (array_key_exists($deleteKey, $dec)) {
                         unset($dec[$deleteKey]);
                     }
                 }
+            }
 
-            if (!empty($this->whiteList))
+            if (!empty($this->whiteList)) {
                 foreach ($dec as $tblName => $table) {
                     if (!in_array($tblName, $this->whiteList)) {
                         unset($dec[$tblName]);
                     }
                 }
+            }
 
             $this->scheme = $dec;
         } else {
@@ -369,10 +379,11 @@ class Database
      */
     public function getIndexList($tableName)
     {
-        if (array_key_exists($tableName, $this->indexes))
+        if (array_key_exists($tableName, $this->indexes)) {
             return $this->indexes[$tableName];
-        else
+        } else {
             return array();
+        }
     }
 
 
@@ -404,13 +415,21 @@ class Database
      */
     protected static function addSqlExtras(& $sql, $column)
     {
-        if ($column['LENGTH']) $sql .= ' (' . $column['LENGTH'] . ')';
-        if ($column['UNSIGNED']) $sql .= ' UNSIGNED ';
-
-        if (!$column['NULLABLE']) $sql .= " NOT NULL ";
-        if (!is_null($column['DEFAULT'])) $sql .= " DEFAULT \\'{$column['DEFAULT']}\\' ";
-        if ($column['IDENTITY']) $sql .= ' AUTO_INCREMENT ';
-
+        if ($column['LENGTH']) {
+            $sql .= ' (' . $column['LENGTH'] . ')';
+        }
+        if ($column['UNSIGNED']) {
+            $sql .= ' UNSIGNED ';
+        }
+        if (!$column['NULLABLE']) {
+            $sql .= " NOT NULL ";
+        }
+        if (!is_null($column['DEFAULT'])) {
+            $sql .= " DEFAULT \\'{$column['DEFAULT']}\\' ";
+        }
+        if ($column['IDENTITY']) {
+            $sql .= ' AUTO_INCREMENT ';
+        }
     }
 
     /**
@@ -477,8 +496,12 @@ class Database
             $indexString .= "(" . implode(',', $fields) . ")";
         } else {
             $indexString = "CREATE ";
-            if ($index['type'] === 'FULLTEXT') $indexString .= " FULLTEXT ";
-            if ($index['unique']) $indexString .= " UNIQUE ";
+            if ($index['type'] === 'FULLTEXT') {
+                $indexString .= " FULLTEXT ";
+            }
+            if ($index['unique']) {
+                $indexString .= " UNIQUE ";
+            }
             $indexString .= " INDEX `{$index['name']}` ";
             if (in_array($index['type'], array('RTREE', 'BTREE', 'HASH',))) {
                 $indexString .= " USING {$index['type']} ";
@@ -530,7 +553,9 @@ class Database
      */
     public static function addConstraint($index)
     {
-        if (!isset($index['constraint']['column']) || !strlen($index['constraint']['column'])) return '';
+        if (!isset($index['constraint']['column']) || !strlen($index['constraint']['column'])) {
+            return '';
+        }
         $sql = "ALTER TABLE `{$index['constraint']['table']}` " .
             "ADD CONSTRAINT `{$index['constraint']['name']}` " .
             "FOREIGN KEY (`{$index['constraint']['column']}`) " .
