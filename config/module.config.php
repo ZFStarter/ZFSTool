@@ -126,5 +126,8 @@ return array(
         'abstract_factories' => array(
             'ZFCTool\Service\ModuleFactory',
         ),
+        'factories' => array(
+            'Zend\Db\Adapter\Adapter' => 'Zend\Db\Adapter\AdapterServiceFactory',
+        ),
     )
 );
