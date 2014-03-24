@@ -15,6 +15,32 @@ ZFCTool - Zend Framework 2 command line Tool
 
 ------------------------------------------------------------------------------------------------------------
 
+###Подключение:
+
+В composer.json добавляем в зависимостях zfctool и устанавливаем зависимость
+
+```js
+    "require-dev": {
+        "naxel/zfctool": "dev-master"
+    }
+```
+
+В config\autoload\global.php
+
+указываем, если нужно, директорию где находятся модули, как будет называться директория с миграциямии и таблица в БД:
+
+```php
+return array(
+//...
+    'ZFCTool' => array(
+        'migrations' => array(
+            // Path to modules directory
+            'modulesDirectoryPath' => 'module_app'
+        ),
+    )
+);
+```
+
 ###Работа с миграциями:
 
 
