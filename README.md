@@ -15,15 +15,23 @@ ZFCTool - Zend Framework 2 command line Tool
 
 ------------------------------------------------------------------------------------------------------------
 
-###Подключение:
+###Установка:
 
-В composer.json добавляем в зависимостях zfctool и устанавливаем зависимость
+Добавляем в `composer.json`:
 
-```js
+```json
+{
     "require-dev": {
         "naxel/zfctool": "dev-master"
     }
+}
 ```
+
+И обновляем зависимость:
+
+    $ curl -s http://getcomposer.org/installer | php
+    $ php composer.phar update
+
 
 В config\autoload\global.php
 
@@ -157,3 +165,9 @@ php vendor/bin/zfc.php up db
 
 `module`  - (Опциональный) название модуля, для которого сгенерируеться дамп
 `name`  - (Опциональный) имя дампа
+
+
+## Support
+
+If you believe you have found a bug, please report it using the [GitHub issue tracker](https://github.com/naxel/ZFCTool/issues),
+or better yet, fork the library and submit a pull request.
