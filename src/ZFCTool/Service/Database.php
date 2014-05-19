@@ -581,7 +581,7 @@ class Database
         $values = array();
         foreach ($bind as $col => $val) {
             $cols[] = '`' . $col . '`';
-            $values[] = self::$defaultDb->getPlatform()->quoteIdentifier($val);
+            $values[] = self::$defaultDb->getPlatform()->quoteValue($val);
         }
 
         // build the statement
