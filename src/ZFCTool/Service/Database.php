@@ -123,7 +123,7 @@ class Database
         }
 
         if ($dump) {
-            $dump = $this->getDisableChecksNotation() . $dump;
+            $dump = self::getDisableChecksNotation() . $dump;
         }
 
         return $dump;
@@ -132,7 +132,7 @@ class Database
     /**
      * @return string
      */
-    public function getDisableChecksNotation()
+    public static function getDisableChecksNotation()
     {
         $sql = "/*!40101 SET NAMES utf8 */;\n"
             . "/*!40101 SET SQL_MODE=''*/;\n"

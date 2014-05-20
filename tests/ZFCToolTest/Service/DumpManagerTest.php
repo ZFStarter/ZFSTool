@@ -162,7 +162,8 @@ class DumpManagerTest extends \PHPUnit_Framework_TestCase
             self::FIXTURE_MODULE, self::DUMP_FILE_NAME, self::TABLE_NAME, 'test_black_table1,test_black_table2'
         );
 
-        $compareTo = Database::dropTable(self::TABLE_NAME) . ';' . PHP_EOL
+        $compareTo = Database::getDisableChecksNotation()
+            . Database::dropTable(self::TABLE_NAME) . ';' . PHP_EOL
             . Database::createTable(self::TABLE_NAME) . ';' . PHP_EOL
             . Database::insert(self::TABLE_NAME, $testData) . ';' . PHP_EOL;
 
