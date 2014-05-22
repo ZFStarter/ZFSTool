@@ -22,7 +22,7 @@ ZFCTool - Zend Framework 2 command line Tool
 ```json
 {
     "require-dev": {
-        "naxel/zfctool": "dev-master"
+        "zfstarter/zfs-tool": "dev-master"
     }
 }
 ```
