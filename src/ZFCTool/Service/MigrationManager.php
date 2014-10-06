@@ -307,14 +307,14 @@ class MigrationManager
             if (isset($migrationBody['up'])) {
                 $upBody = '';
                 foreach ($migrationBody['up'] as $query) {
-                    $upBody .= '$this->query(\'' . $query . '\');' . PHP_EOL;
+                    $upBody .= '$this->query("' . $query . '");' . PHP_EOL;
                 }
                 $methodUp['body'] = $upBody;
             }
             if (isset($migrationBody['down'])) {
                 $downBody = '';
                 foreach ($migrationBody['down'] as $query) {
-                    $downBody .= '$this->query(\'' . $query . '\');';
+                    $downBody .= '$this->query("' . $query . '");';
                 }
                 $methodDown['body'] = $downBody;
             }

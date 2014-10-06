@@ -338,7 +338,7 @@ class MigrationManagerTest extends \PHPUnit_Framework_TestCase
         if (is_file($migrationPath)) {
             $migrationFile = file_get_contents($migrationPath);
             $this->assertContains('CREATE TABLE `album`', $migrationFile);
-            $this->assertContains('$this->query(\'DROP TABLE IF EXISTS `album`\');', $migrationFile);
+            $this->assertContains('$this->query("DROP TABLE IF EXISTS `album`");', $migrationFile);
             unlink($migrationPath);
         }
     }
@@ -419,7 +419,7 @@ class MigrationManagerTest extends \PHPUnit_Framework_TestCase
 
         $migrationFile = file_get_contents($migrationPath);
         $this->assertContains('CREATE TABLE `' . $tableName . '`', $migrationFile);
-        $this->assertContains('$this->query(\'DROP TABLE IF EXISTS `' . $tableName . '`\');', $migrationFile);
+        $this->assertContains('$this->query("DROP TABLE IF EXISTS `' . $tableName . '`");', $migrationFile);
         unlink($migrationPath);
 
         $db->dropTable($tableName);
