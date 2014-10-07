@@ -190,14 +190,16 @@ class MigrationController extends AbstractActionController
                     $this->console->writeLine('Migration generated: ' . $migrationPath, Color::GREEN);
                 }
 
-                if ($commit) {
-
-                    preg_match("/\d\d\d\d\d\d\d\d_\d\d\d\d\d\d_\d\d/i", $migrationPath, $matches);
-                    $migration = $matches[0];
-                    $this->manager->commit($module, $migration);
-                    $this->console->writeLine('Committed migration: ' . $migration, Color::GREEN);
+                if (!empty($migrationPath)) {
+                    if ($commit) {
+                        preg_match("/\d\d\d\d\d\d\d\d_\d\d\d\d\d\d_\d\d/i", $migrationPath, $matches);
+                        $migration = current($matches);
+                        $this->manager->commit($module, $migration);
+                        $this->console->writeLine('Committed migration: ' . $migration, Color::GREEN);
+                    }
+                } else {
+                    $this->console->writeLine('Your database has no changes from last revision!');
                 }
-
             }
         } catch (ZFCToolException $e) {
             $this->console->writeLine($e->getMessage(), Color::RED);
