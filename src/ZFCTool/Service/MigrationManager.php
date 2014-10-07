@@ -314,7 +314,7 @@ class MigrationManager
             if (isset($migrationBody['down'])) {
                 $downBody = '';
                 foreach ($migrationBody['down'] as $query) {
-                    $downBody .= '$this->query("' . $query . '");';
+                    $downBody .= '$this->query("' . $query . '");' . PHP_EOL;
                 }
                 $methodDown['body'] = $downBody;
             }
