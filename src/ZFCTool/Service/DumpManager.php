@@ -287,4 +287,27 @@ class DumpManager
 
         return $options;
     }
+
+    /**
+     * Method returns array of exists in filesystem dump
+     *
+     * @param string $module Module name
+     * @return array
+     */
+    public function getExistsDumps($module = null)
+    {
+        $filesDirty = scandir($this->getDumpsDirectoryPath($module));
+
+        $dumps = array();
+        // foreach loop for $filesDirty array
+        foreach ($filesDirty as $file) {
+            if (preg_match('#(\d{8}_\d{6}_\d{2}[_]*[A-z0-9]*)\.sql#is', $file, $match)) {
+                array_push($dumps, $match[1]);
+            }
+        }
+
+        sort($dumps);
+
+        return $dumps;
+    }
 }

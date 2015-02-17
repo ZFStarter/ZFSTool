@@ -162,4 +162,21 @@ class DumpController extends AbstractActionController
             $this->console->writeLine($e->getMessage(), Color::RED);
         }
     }
+
+    /**
+     * list dump files
+     */
+    public function listAction()
+    {
+        $module = $this->request->getParam('module');
+        if ($module) {
+            $this->console->writeLine('Only for module "' . $module . '":');
+        }
+
+        $dumps = $this->manager->getExistsDumps($module);
+
+        foreach ($dumps as $dump) {
+            $this->console->writeLine("\t$dump", Color::GREEN, null);
+        }
+    }
 }
