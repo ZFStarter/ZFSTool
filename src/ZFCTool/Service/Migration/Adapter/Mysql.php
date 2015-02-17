@@ -113,7 +113,6 @@ class Mysql extends AbstractAdapter
         }
 
         if ($primary) {
-
             $metadata = new Metadata($this->getDbAdapter());
             // TODO: drop primary key, add primary key (`all keys`,`$column`)
             $primary = array();

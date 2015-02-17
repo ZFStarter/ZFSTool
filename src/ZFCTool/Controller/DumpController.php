@@ -124,7 +124,6 @@ class DumpController extends AbstractActionController
         $manager = $this->getManager();
 
         try {
-
             $result = $manager->create($module, $name, $whitelist, $blacklist);
 
             if ($result) {
@@ -150,7 +149,6 @@ class DumpController extends AbstractActionController
         $name = $this->request->getParam('name');
 
         try {
-
             $result = $manager->import($name, $module);
             if ($result) {
                 $this->console->writeLine('Database dump "' . $name . '" imported!', Color::GREEN);

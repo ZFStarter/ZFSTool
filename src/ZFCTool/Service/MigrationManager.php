@@ -425,7 +425,6 @@ class MigrationManager
     protected function strToArray($str)
     {
         if (!empty($str)) {
-
             if (strpos($str, ',')) {
                 return explode(',', $str);
             }
@@ -705,7 +704,6 @@ class MigrationManager
         }
 
         try {
-
             $sql = new Sql($this->db);
             $delete = $sql->delete($this->getMigrationsSchemaTable());
             $delete->where(
@@ -759,12 +757,10 @@ class MigrationManager
         rsort($loaded);
 
         if (($to) && (!in_array($to, $loaded))) {
-
             throw new MigrationNotLoadedException("Migration `$to` not loaded");
         }
 
         foreach ($loaded as $migration) {
-
             if (!in_array($migration, $exists)) {
                 throw new MigrationNotExistsException("Migration `$migration` not exists");
             }
@@ -983,7 +979,6 @@ class MigrationManager
         rsort($loaded);
 
         foreach ($loaded as $migration) {
-
             if (!in_array($migration, $exists)) {
                 throw new MigrationNotExistsException("Migration `$migration` not exists");
             }
