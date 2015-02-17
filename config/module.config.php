@@ -101,6 +101,15 @@ return array(
                         )
                     )
                 ),
+                'listing-dump' => array(
+                    'options' => array(
+                        'route' => '(listing|list|ls) dump [--module=]',
+                        'defaults' => array(
+                            'controller' => 'ZFCTool\Controller\Dump',
+                            'action' => 'list'
+                        )
+                    )
+                ),
                 'create-dump' => array(
                     'options' => array(
                         'route' => 'create dump [--module=] [--name=] [--whitelist=] [--blacklist=]',

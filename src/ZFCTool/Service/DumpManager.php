@@ -198,7 +198,6 @@ class DumpManager
         $database = new Database($this->db, $this->getOptions($whitelist, $blacklist));
 
         if ($dump = $database->getDump()) {
-
             $path = $this->getDumpsDirectoryPath($module);
 
             if (!$name) {
@@ -229,7 +228,6 @@ class DumpManager
         $path = $this->getDumpsDirectoryPath($module);
 
         if (is_file($path . DIRECTORY_SEPARATOR . $name)) {
-
             $dump = file_get_contents($path . DIRECTORY_SEPARATOR . $name);
 
             return $this->db->query($dump, Adapter::QUERY_MODE_EXECUTE);
@@ -248,7 +246,6 @@ class DumpManager
     protected function strToArray($str)
     {
         if (!empty($str)) {
-
             if (strpos($str, ',')) {
                 return explode(',', $str);
             }
@@ -286,5 +283,28 @@ class DumpManager
         $options['loaddata'] = true;
 
         return $options;
+    }
+
+    /**
+     * Method returns array of exists in filesystem dump
+     *
+     * @param string $module Module name
+     * @return array
+     */
+    public function getExistsDumps($module = null)
+    {
+        $filesDirty = scandir($this->getDumpsDirectoryPath($module));
+
+        $dumps = array();
+        // foreach loop for $filesDirty array
+        foreach ($filesDirty as $file) {
+            if (preg_match('#(\d{8}_\d{6}_\d{2}[_]*[A-z0-9]*)\.sql#is', $file, $match)) {
+                array_push($dumps, $match[1]);
+            }
+        }
+
+        sort($dumps);
+
+        return $dumps;
     }
 }

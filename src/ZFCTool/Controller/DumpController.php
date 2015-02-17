@@ -124,7 +124,6 @@ class DumpController extends AbstractActionController
         $manager = $this->getManager();
 
         try {
-
             $result = $manager->create($module, $name, $whitelist, $blacklist);
 
             if ($result) {
@@ -150,7 +149,6 @@ class DumpController extends AbstractActionController
         $name = $this->request->getParam('name');
 
         try {
-
             $result = $manager->import($name, $module);
             if ($result) {
                 $this->console->writeLine('Database dump "' . $name . '" imported!', Color::GREEN);
@@ -160,6 +158,23 @@ class DumpController extends AbstractActionController
             $this->console->writeLine($e->getMessage(), Color::RED);
         } catch (\Exception $e) {
             $this->console->writeLine($e->getMessage(), Color::RED);
+        }
+    }
+
+    /**
+     * list dump files
+     */
+    public function listAction()
+    {
+        $module = $this->request->getParam('module');
+        if ($module) {
+            $this->console->writeLine('Only for module "' . $module . '":');
+        }
+
+        $dumps = $this->manager->getExistsDumps($module);
+
+        foreach ($dumps as $dump) {
+            $this->console->writeLine("\t$dump", Color::GREEN, null);
         }
     }
 }
