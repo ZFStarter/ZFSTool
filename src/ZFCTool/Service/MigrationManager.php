@@ -255,6 +255,66 @@ class MigrationManager
         throw new ZFCToolException('Module `' . $module . '` not exists.');
     }
 
+    /**
+     * Method returns path to migrations directories
+     *
+     * @param null $module Module name
+     * @param bool $scanModuleDirectories Looking for migrations in site root dir
+     * @return array
+     * @throws ZFCToolException
+     */
+    public function getMigrationsDirectoryPaths($module = null, $scanModuleDirectories = false)
+    {
+        $modulePaths = $this->getModulesDirectoryPath();
+
+        if (!is_array($modulePaths)) {
+            $modulePaths = array($modulePaths);
+        }
+
+        $paths = array();
+
+        if (null !== $module) {
+            foreach ($modulePaths as $path) {
+                $modulePath = $path . '/' . $module;
+
+                if (file_exists($modulePath)) {
+                    $paths[$module] = $modulePath . '/' . $this->getMigrationsDirectoryName();
+                }
+            }
+
+            if (empty($paths)) {
+                throw new ZFCToolException("Module `$module` not exists.");
+            }
+
+            return $paths;
+        }
+
+        $path = $this->getProjectDirectoryPath();
+        $path .= '/' . $this->getMigrationsDirectoryName();
+        $this->preparePath($path);
+
+        $paths[''] = $path;
+
+        if ($scanModuleDirectories) {
+            foreach ($modulePaths as $path) {
+                $filesDirty = array_diff(scandir($path), array('.', '..'));
+
+                foreach ($filesDirty as $dir) {
+                    $modulePath = $path.'/'.$dir;
+
+                    if (is_dir($modulePath)) {
+                        $migrationPath = $modulePath . '/' . $this->getMigrationsDirectoryName();
+
+                        if (file_exists($migrationPath)) {
+                            $paths[$dir] = $migrationPath;
+                        }
+                    }
+                }
+            }
+        }
+
+        return $paths;
+    }
 
     /**
      * Method return migrations schema table
