@@ -156,10 +156,10 @@ class MigrationManager
     }
 
     /**
-     * Method return application directory path
+     * Method return application directory path(s)
      *
      * @throws ZFCToolException
-     * @return string
+     * @return array|string
      */
     public function getModulesDirectoryPath()
     {
@@ -173,7 +173,7 @@ class MigrationManager
     /**
      * Method set application directory path
      *
-     * @param string $value
+     * @param mixed $value
      * @return MigrationManager
      */
     public function setModulesDirectoryPath($value)
@@ -220,19 +220,39 @@ class MigrationManager
         if (null == $module) {
             $path = $this->getProjectDirectoryPath();
             $path .= '/' . $this->getMigrationsDirectoryName();
-        } else {
-            $modulePath = $this->getModulesDirectoryPath() . '/' . $module;
+
+            $this->preparePath($path);
+
+            return $path;
+        }
+
+        $modulePaths = $this->getModulesDirectoryPath();
+
+        if (!is_array($modulePaths)) {
+            $modulePath = $modulePaths . '/' . $module;
 
             if (!file_exists($modulePath)) {
                 throw new ZFCToolException("Module `$module` not exists.");
             }
 
             $path = $modulePath . '/' . $this->getMigrationsDirectoryName();
+            $this->preparePath($path);
+
+            return $path;
         }
 
-        $this->preparePath($path);
+        foreach ($modulePaths as $modulePath) {
+            $path = $modulePath . '/' . $module;
 
-        return $path;
+            if (file_exists($path)) {
+                $path .= '/' . $this->getMigrationsDirectoryName();
+                $this->preparePath($path);
+
+                return $path;
+            }
+        }
+
+        throw new ZFCToolException('Module `' . $module . '` not exists.');
     }
 
 
