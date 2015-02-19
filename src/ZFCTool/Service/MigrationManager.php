@@ -30,7 +30,7 @@ use ZFCTool\Exception\MigrationNotExistsException;
 use ZFCTool\Service\Migration\AbstractMigration;
 use ZFCTool\Service\Database\Diff;
 
-class MigrationManager
+class MigrationManager extends Manager
 {
 
     //Migration status type
@@ -129,60 +129,6 @@ class MigrationManager
 
 
     /**
-     * Method return application directory path
-     *
-     * @throws ZFCToolException
-     * @return string
-     */
-    public function getProjectDirectoryPath()
-    {
-        if (null == $this->options['projectDirectoryPath']) {
-            throw new ZFCToolException('Project directory path undefined.');
-        }
-
-        return $this->options['projectDirectoryPath'];
-    }
-
-    /**
-     * Method set application directory path
-     *
-     * @param  string $value
-     * @return MigrationManager
-     */
-    public function setProjectDirectoryPath($value)
-    {
-        $this->options['projectDirectoryPath'] = $value;
-        return $this;
-    }
-
-    /**
-     * Method return application directory path(s)
-     *
-     * @throws ZFCToolException
-     * @return array|string
-     */
-    public function getModulesDirectoryPath()
-    {
-        if (null == $this->options['modulesDirectoryPath']) {
-            throw new ZFCToolException('Modules directory path undefined.');
-        }
-
-        return $this->options['modulesDirectoryPath'];
-    }
-
-    /**
-     * Method set application directory path
-     *
-     * @param mixed $value
-     * @return MigrationManager
-     */
-    public function setModulesDirectoryPath($value)
-    {
-        $this->options['modulesDirectoryPath'] = $value;
-        return $this;
-    }
-
-    /**
      * Method get migrations directory name
      *
      * @throws ZFCToolException
@@ -217,42 +163,7 @@ class MigrationManager
      */
     public function getMigrationsDirectoryPath($module = null)
     {
-        if (null == $module) {
-            $path = $this->getProjectDirectoryPath();
-            $path .= '/' . $this->getMigrationsDirectoryName();
-
-            $this->preparePath($path);
-
-            return $path;
-        }
-
-        $modulePaths = $this->getModulesDirectoryPath();
-
-        if (!is_array($modulePaths)) {
-            $modulePath = $modulePaths . '/' . $module;
-
-            if (!file_exists($modulePath)) {
-                throw new ZFCToolException("Module `$module` not exists.");
-            }
-
-            $path = $modulePath . '/' . $this->getMigrationsDirectoryName();
-            $this->preparePath($path);
-
-            return $path;
-        }
-
-        foreach ($modulePaths as $modulePath) {
-            $path = $modulePath . '/' . $module;
-
-            if (file_exists($path)) {
-                $path .= '/' . $this->getMigrationsDirectoryName();
-                $this->preparePath($path);
-
-                return $path;
-            }
-        }
-
-        throw new ZFCToolException('Module `' . $module . '` not exists.');
+        return $this->getDirectoryPath($this->getMigrationsDirectoryName(), $module);
     }
 
     /**
@@ -265,55 +176,7 @@ class MigrationManager
      */
     public function getMigrationsDirectoryPaths($module = null, $scanModuleDirectories = false)
     {
-        $modulePaths = $this->getModulesDirectoryPath();
-
-        if (!is_array($modulePaths)) {
-            $modulePaths = array($modulePaths);
-        }
-
-        $paths = array();
-
-        if (null !== $module) {
-            foreach ($modulePaths as $path) {
-                $modulePath = $path . '/' . $module;
-
-                if (file_exists($modulePath)) {
-                    $paths[$module] = $modulePath . '/' . $this->getMigrationsDirectoryName();
-                }
-            }
-
-            if (empty($paths)) {
-                throw new ZFCToolException("Module `$module` not exists.");
-            }
-
-            return $paths;
-        }
-
-        $path = $this->getProjectDirectoryPath();
-        $path .= '/' . $this->getMigrationsDirectoryName();
-        $this->preparePath($path);
-
-        $paths[''] = $path;
-
-        if ($scanModuleDirectories) {
-            foreach ($modulePaths as $path) {
-                $filesDirty = array_diff(scandir($path), array('.', '..'));
-
-                foreach ($filesDirty as $dir) {
-                    $modulePath = $path.'/'.$dir;
-
-                    if (is_dir($modulePath)) {
-                        $migrationPath = $modulePath . '/' . $this->getMigrationsDirectoryName();
-
-                        if (file_exists($migrationPath)) {
-                            $paths[$dir] = $migrationPath;
-                        }
-                    }
-                }
-            }
-        }
-
-        return $paths;
+        return $this->getDirectoryPaths($this->getMigrationsDirectoryName(), $module, $scanModuleDirectories);
     }
 
     /**
@@ -428,20 +291,6 @@ class MigrationManager
     }
 
     /**
-     * Method prepare path (create not existing dirs)
-     *
-     * @param string $path
-     */
-    protected function preparePath($path)
-    {
-        if (!is_dir($path)) {
-            $this->preparePath(dirname($path));
-            mkdir($path, 0777);
-        }
-    }
-
-
-    /**
      * Method returns array of exists in filesystem migrations
      *
      * @param string $module Module name
@@ -452,23 +301,7 @@ class MigrationManager
     {
         $modulePaths = $this->getMigrationsDirectoryPaths($module, $scanModuleDirectories);
 
-        $migrations = array();
-
-        foreach ($modulePaths as $moduleName => $modulePath) {
-            $filesDirty = scandir($modulePath);
-
-            // foreach loop for $filesDirty array
-            foreach ($filesDirty as $file) {
-                if (preg_match('/(\d{8}_\d{6}_\d{2}[_]*[A-z0-9]*)\.php$/', $file, $match)) {
-                    $migrations[$moduleName][] = $match[1];
-                }
-            }
-
-        }
-
-        $this->sortMigrations($migrations);
-
-        return $migrations;
+        return $this->getExistsFiles('php', $modulePaths);
     }
 
 
@@ -500,23 +333,6 @@ class MigrationManager
         }
 
         return $migrations;
-    }
-
-    /**
-     * execute array from string
-     * @param $str
-     * @return array
-     */
-    protected function strToArray($str)
-    {
-        if (!empty($str)) {
-            if (strpos($str, ',')) {
-                return explode(',', $str);
-            }
-            return array($str);
-        } else {
-            return array();
-        }
     }
 
 
@@ -608,17 +424,17 @@ class MigrationManager
         $exists = $this->getExistsMigrations($module, $scanModuleDirectories);
         $loaded = $this->getLoadedMigrations($module);
 
-        $migrations = $this->migrationsMerge($exists, $loaded);
+        $migrations = $this->arraysMerge($exists, $loaded);
 
-        $this->sortMigrations($migrations);
+        $this->sortArray($migrations);
 
         foreach ($migrations as $moduleName => $migrationArray) {
             foreach ($migrationArray as $migration) {
                 $v = 0;
-                if ($this->migrationInArray($migration, $exists)) {
+                if ($this->valueInArray($migration, $exists)) {
                     $v = $v + 1;
                 }
-                if ($this->migrationInArray($migration, $loaded)) {
+                if ($this->valueInArray($migration, $loaded)) {
                     $v = $v + 2;
                 }
 
@@ -712,13 +528,13 @@ class MigrationManager
 
             $exists = $this->getExistsMigrations($module, $scanModuleDirectories);
 
-            if (!$this->migrationInArray($migration, $exists)) {
+            if (!$this->valueInArray($migration, $exists)) {
                 throw new MigrationNotExistsException("Migration `$migration` not exists");
             }
 
             $loaded = $this->getLoadedMigrations($module);
 
-            if ($this->migrationInArray($migration, $loaded)) {
+            if ($this->valueInArray($migration, $loaded)) {
                 throw new MigrationExecutedException("Migration `$migration` already executed");
             }
 
@@ -843,9 +659,9 @@ class MigrationManager
         $exists = $this->getExistsMigrations($module, $scanModuleDirectories);
         $loaded = $this->getLoadedMigrations($module);
 
-        $this->sortMigrations($loaded, 'DESC');
+        $this->sortArray($loaded, 'DESC');
 
-        if (($to) && (!$this->migrationInArray($to, $loaded))) {
+        if (($to) && (!$this->valueInArray($to, $loaded))) {
             throw new MigrationNotLoadedException("Migration `$to` not loaded");
         }
 
@@ -853,7 +669,7 @@ class MigrationManager
 
         foreach ($loaded as $moduleName => $migrationArray) {
             foreach ($migrationArray as $migration) {
-                if (!$this->migrationInArray($migration, $exists)) {
+                if (!$this->valueInArray($migration, $exists)) {
                     throw new MigrationNotExistsException("Migration `$moduleName`.`$migration` not exists");
                 }
 
@@ -954,7 +770,7 @@ class MigrationManager
         $exists = $this->getExistsMigrations($module, $scanModuleDirectories);
         $loaded = $this->getLoadedMigrations($module);
 
-        $ready = $this->migrationsDiff($exists, $loaded);
+        $ready = $this->arrayDiff($exists, $loaded);
 
         if (sizeof($ready) == 0) {
             if ($module) {
@@ -964,9 +780,9 @@ class MigrationManager
             }
         }
 
-        $this->sortMigrations($ready);
+        $this->sortArray($ready);
 
-        if (($to) && (!$this->migrationInArray($to, $exists))) {
+        if (($to) && (!$this->valueInArray($to, $exists))) {
             throw new MigrationNotExistsException("Migration `$to` not exists");
         }
 
@@ -1093,13 +909,13 @@ class MigrationManager
             throw new NoMigrationsForExecutionException('No migrations to rollback.');
         }
 
-        $this->sortMigrations($loaded, 'DESC');
+        $this->sortArray($loaded, 'DESC');
 
         $modulePaths = $this->getMigrationsDirectoryPaths($module, $scanModuleDirectories);
 
         foreach ($loaded as $moduleName => $migrationArray) {
             foreach ($migrationArray as $migration) {
-                if (!$this->migrationInArray($migration, $exists)) {
+                if (!$this->valueInArray($migration, $exists)) {
                     throw new MigrationNotExistsException("Migration `$moduleName`.`$migration` not exists");
                 }
 
@@ -1151,130 +967,5 @@ class MigrationManager
                 }
             }
         }
-    }
-
-    /**
-     * Merge migrations arrays
-     *
-     * @param array $array1
-     * @param array $array2
-     * @return array
-     */
-    public function migrationsMerge(array $array1, array $array2)
-    {
-        $merged = array_merge_recursive($array1, $array2);
-
-        foreach ($merged as $key => &$value) {
-            $value = array_unique($value);
-        }
-
-        return $merged;
-    }
-
-    /**
-     * Sorting migration array by order
-     *
-     * @param array $array
-     * @param string $order
-     */
-    public function sortMigrations(&$array, $order = 'ASC')
-    {
-        if (!$array || count($array) < 1) {
-            return;
-        }
-
-        if (count($array) == 1) {
-            reset($array);
-            if ($order == 'ASC') {
-                sort($array[key($array)]);
-            } else {
-                rsort($array[key($array)]);
-            }
-        } else {
-            uasort($array, function(&$a, &$b) use ($order) {
-                if ($order == 'ASC') {
-                    sort($a);
-                    sort($b);
-                } else {
-                    rsort($a);
-                    rsort($b);
-                }
-
-                return (reset($a) < reset($b)) ?
-                    ($order == 'ASC' ? -1 : 1) :
-                    (end($a) > end($b)) ? ($order == 'ASC' ? 1 : -1) : 0;
-            });
-        }
-    }
-
-    /**
-     * Looking if array contain migration
-     *
-     * @param string $needle
-     * @param array $haystack
-     * @param bool $strict
-     * @return bool
-     */
-    public function migrationInArray($needle, $haystack, $strict = false)
-    {
-        foreach ($haystack as $item) {
-            if (($strict ? $item === $needle : $item == $needle) ||
-                (is_array($item) && $this->migrationInArray($needle, $item, $strict))) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-
-    /**
-     * Get migration module name from migrations array
-     *
-     * @param string $needle
-     * @param array $array
-     * @return mixed
-     */
-    public function getArrayKey($needle, $array)
-    {
-        foreach ($array as $key => $value) {
-            foreach ($value as $item) {
-                if ($item === $needle) {
-                    return $key;
-                }
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Return difference between two migration arrays
-     *
-     * @param array $aArray1
-     * @param array $aArray2
-     * @return array
-     */
-    public function migrationsDiff($aArray1, $aArray2)
-    {
-        $aReturn = array();
-
-        foreach ($aArray1 as $mKey => $mValue) {
-            if (array_key_exists($mKey, $aArray2)) {
-                if (is_array($mValue)) {
-                    $aRecursiveDiff = $this->migrationsDiff($mValue, $aArray2[$mKey]);
-                    if (count($aRecursiveDiff)) {
-                        $aReturn[$mKey] = $aRecursiveDiff;
-                    }
-                } else {
-                    if ($mValue != $aArray2[$mKey]) {
-                        $aReturn[$mKey] = $mValue;
-                    }
-                }
-            } else {
-                $aReturn[$mKey] = $mValue;
-            }
-        }
-        return $aReturn;
     }
 }
