@@ -1107,4 +1107,129 @@ class MigrationManager
             }
         }
     }
+
+    /**
+     * Merge migrations arrays
+     *
+     * @param array $array1
+     * @param array $array2
+     * @return array
+     */
+    public function migrationsMerge(array $array1, array $array2)
+    {
+        $merged = array_merge_recursive($array1, $array2);
+
+        foreach ($merged as $key => &$value) {
+            $value = array_unique($value);
+        }
+
+        return $merged;
+    }
+
+    /**
+     * Sorting migration array by order
+     *
+     * @param array $array
+     * @param string $order
+     */
+    public function sortMigrations(&$array, $order = 'ASC')
+    {
+        if (!$array || count($array) < 1) {
+            return;
+        }
+
+        if (count($array) == 1) {
+            reset($array);
+            if ($order == 'ASC') {
+                sort($array[key($array)]);
+            } else {
+                rsort($array[key($array)]);
+            }
+        } else {
+            uasort($array, function(&$a, &$b) use ($order) {
+                if ($order == 'ASC') {
+                    sort($a);
+                    sort($b);
+                } else {
+                    rsort($a);
+                    rsort($b);
+                }
+
+                return (reset($a) < reset($b)) ?
+                    ($order == 'ASC' ? -1 : 1) :
+                    (end($a) > end($b)) ? ($order == 'ASC' ? 1 : -1) : 0;
+            });
+        }
+    }
+
+    /**
+     * Looking if array contain migration
+     *
+     * @param string $needle
+     * @param array $haystack
+     * @param bool $strict
+     * @return bool
+     */
+    public function migrationInArray($needle, $haystack, $strict = false)
+    {
+        foreach ($haystack as $item) {
+            if (($strict ? $item === $needle : $item == $needle) ||
+                (is_array($item) && $this->migrationInArray($needle, $item, $strict))) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+
+    /**
+     * Get migration module name from migrations array
+     *
+     * @param string $needle
+     * @param array $array
+     * @return mixed
+     */
+    public function getArrayKey($needle, $array)
+    {
+        foreach ($array as $key => $value) {
+            foreach ($value as $item) {
+                if ($item === $needle) {
+                    return $key;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Return difference between two migration arrays
+     *
+     * @param array $aArray1
+     * @param array $aArray2
+     * @return array
+     */
+    public function migrationsDiff($aArray1, $aArray2)
+    {
+        $aReturn = array();
+
+        foreach ($aArray1 as $mKey => $mValue) {
+            if (array_key_exists($mKey, $aArray2)) {
+                if (is_array($mValue)) {
+                    $aRecursiveDiff = $this->migrationsDiff($mValue, $aArray2[$mKey]);
+                    if (count($aRecursiveDiff)) {
+                        $aReturn[$mKey] = $aRecursiveDiff;
+                    }
+                } else {
+                    if ($mValue != $aArray2[$mKey]) {
+                        $aReturn[$mKey] = $mValue;
+                    }
+                }
+            } else {
+                $aReturn[$mKey] = $mValue;
+            }
+        }
+        return $aReturn;
+    }
 }
