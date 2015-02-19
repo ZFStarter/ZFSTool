@@ -119,6 +119,15 @@ return array(
                         )
                     )
                 ),
+                'listing-dump' => array(
+                    'options' => array(
+                        'route' => '(listing|list|ls) dump [--module=] [--scanfolders|-scan]:scanfolders',
+                        'defaults' => array(
+                            'controller' => 'ZFCTool\Controller\Dump',
+                            'action' => 'list'
+                        )
+                    )
+                ),
             )
         )
     ),
