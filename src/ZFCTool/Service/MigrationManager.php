@@ -531,9 +531,10 @@ class MigrationManager
      * Listing migrations
      *
      * @param null|string $module
+     * @param bool $scanModuleDirectories Looking for migrations in site root dir
      * @return array
      */
-    public function listMigrations($module = null)
+    public function listMigrations($module = null, $scanModuleDirectories = false)
     {
         $result = array();
         $lastMigration = $this->getLastMigration($module);
@@ -628,10 +629,11 @@ class MigrationManager
     /**
      * @param $module
      * @param $migration
+     * @param bool $scanModuleDirectories Looking for migrations in site root dir
      * @return mixed
      * @throws ZFCToolException
      */
-    public function commit($module, $migration)
+    public function commit($module, $migration, $scanModuleDirectories = false)
     {
         $lastMigration = $this->getLastMigration($module);
 
@@ -748,9 +750,10 @@ class MigrationManager
      *
      * @param string $module Module name
      * @param string $to Migration name
+     * @param bool   $scanModuleDirectories Looking for migrations in site root dir
      * @throws \ZFCTool\Exception\ZFCToolException
      */
-    public function down($module, $to = null)
+    public function down($module, $to = null, $scanModuleDirectories = false)
     {
         $lastMigration = $this->getLastMigration($module);
         $lastMigration = $lastMigration['migration'];
@@ -842,6 +845,7 @@ class MigrationManager
      *
      * @param string $module Module name
      * @param string $to Migration name
+     * @param bool   $scanModuleDirectories Looking for migrations in site root dir
      *
      * @throws \ZFCTool\Exception\IncorrectMigrationNameException
      * @throws \ZFCTool\Exception\ConflictedMigrationException
@@ -851,7 +855,7 @@ class MigrationManager
      * @throws \ZFCTool\Exception\NoMigrationsForExecutionException
      * @throws \ZFCTool\Exception\CurrentMigrationException
      */
-    public function up($module = null, $to = null)
+    public function up($module = null, $to = null, $scanModuleDirectories = false)
     {
         $lastMigration = $this->getLastMigration($module);
         $lastMigration = $lastMigration['migration'];
@@ -980,10 +984,11 @@ class MigrationManager
      *
      * @param string $module Module name
      * @param int $step Steps to rollback
+     * @param bool $scanModuleDirectories Looking for migrations in site root dir
      * @throws \ZFCTool\Exception\ZFCToolException
      * @throws \ZFCTool\Exception\NoMigrationsForExecutionException
      */
-    public function rollback($module, $step)
+    public function rollback($module, $step, $scanModuleDirectories = false)
     {
         if (!is_numeric($step) || ($step <= 0)) {
             throw new ZFCToolException("Step count `$step` is invalid");
