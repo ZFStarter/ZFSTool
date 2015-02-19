@@ -189,6 +189,68 @@ class DumpManager
 
 
     /**
+     * Method returns path(s) to dump directories
+     *
+     * @param null $module Module name
+     * @param bool $scanModuleDirectories Looking for dumps in site root dir
+     * @return array
+     * @throws ZFCToolException
+     */
+    public function getDumpsDirectoryPaths($module = null, $scanModuleDirectories = false)
+    {
+        $modulePaths = $this->getModulesDirectoryPath();
+
+        if (!is_array($modulePaths)) {
+            $modulePaths = array($modulePaths);
+        }
+
+        $paths = array();
+
+        if (null !== $module) {
+            foreach ($modulePaths as $path) {
+                $modulePath = $path . '/' . $module;
+
+                if (file_exists($modulePath)) {
+                    $paths[$module] = $modulePath . '/' . $this->getDumpsDirectoryName();
+                }
+            }
+
+            if (empty($paths)) {
+                throw new ZFCToolException("Module `$module` not exists.");
+            }
+
+            return $paths;
+        }
+
+        $path = $this->getProjectDirectoryPath();
+        $path .= '/' . $this->getDumpsDirectoryName();
+        $this->preparePath($path);
+
+        $paths[''] = $path;
+
+        if ($scanModuleDirectories) {
+            foreach ($modulePaths as $path) {
+                $filesDirty = array_diff(scandir($path), array('.', '..'));
+
+                foreach ($filesDirty as $dir) {
+                    $modulePath = $path.'/'.$dir;
+
+                    if (is_dir($modulePath)) {
+                        $migrationPath = $modulePath . '/' . $this->getDumpsDirectoryName();
+
+                        if (file_exists($migrationPath)) {
+                            $paths[$dir] = $migrationPath;
+                        }
+                    }
+                }
+            }
+        }
+
+        return $paths;
+    }
+
+
+    /**
      * Method prepare path (create not existing dirs)
      *
      * @param string $path
@@ -303,5 +365,64 @@ class DumpManager
         $options['loaddata'] = true;
 
         return $options;
+    }
+
+    /**
+     * Method returns array of exists in filesystem dump
+     *
+     * @param string $module Module name
+     * @return array
+     */
+    public function getExistsDumps($module = null)
+    {
+        $filesDirty = scandir($this->getDumpsDirectoryPath($module));
+
+        $dumps = array();
+        // foreach loop for $filesDirty array
+        foreach ($filesDirty as $file) {
+            if (preg_match('/(\d{8}_\d{6}_\d{2}[_]*[A-z0-9]*)\.sql$/', $file, $match)) {
+                array_push($dumps, $match[1]);
+            }
+        }
+
+        sort($dumps);
+
+        return $dumps;
+    }
+
+    /**
+     * Sorting dump array by order
+     *
+     * @param array $array
+     * @param string $order
+     */
+    public function sortDumps(&$array, $order = 'ASC')
+    {
+        if (!$array || count($array) < 1) {
+            return;
+        }
+
+        if (count($array) == 1) {
+            reset($array);
+            if ($order == 'ASC') {
+                sort($array[key($array)]);
+            } else {
+                rsort($array[key($array)]);
+            }
+        } else {
+            uasort($array, function(&$a, &$b) use ($order) {
+                if ($order == 'ASC') {
+                    sort($a);
+                    sort($b);
+                } else {
+                    rsort($a);
+                    rsort($b);
+                }
+
+                return (reset($a) < reset($b)) ?
+                    ($order == 'ASC' ? -1 : 1) :
+                    (end($a) > end($b)) ? ($order == 'ASC' ? 1 : -1) : 0;
+            });
+        }
     }
 }
