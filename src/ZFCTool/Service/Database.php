@@ -74,7 +74,6 @@ class Database
 
 
         if (isset($options['blacklist']) && !isset($options['whitelist'])) {
-
             if (is_array($options['blacklist'])) {
                 $this->blackList = $options['blacklist'];
             } else {
@@ -82,7 +81,6 @@ class Database
             }
 
         } elseif (isset($options['whitelist']) && !empty($options['whitelist'])) {
-
             if (is_array($options['whitelist'])) {
                 $this->whiteList = $options['whitelist'];
             } else {
@@ -91,7 +89,6 @@ class Database
         }
 
         if ($autoLoad) {
-
             $metadata = new Metadata($adapter);
             $tables = $metadata->getTables();
 
@@ -111,7 +108,6 @@ class Database
     {
         $dump = '';
         foreach ($this->scheme as $tableName => $fields) {
-
             $dump .= self::dropTable($tableName) . ';' . PHP_EOL;
             $dump .= self::createTable($tableName) . ';' . PHP_EOL;
 
@@ -233,7 +229,6 @@ class Database
     public function addTable($tableName)
     {
         if ($this->isTblWhiteListed($tableName) && !$this->isTblBlackListed($tableName)) {
-
             $metadata = new \Zend\Db\Metadata\Metadata($this->db);
             // get the table names
             $columns = $metadata->getColumns($tableName);
@@ -241,7 +236,6 @@ class Database
 
             /** @var $column \Zend\Db\Metadata\Object\ColumnObject */
             foreach ($columns as $column) {
-
                 $scheme[$column->getName()] = array(
                     'SCHEMA_NAME' => null,
                     'TABLE_NAME' => $column->getTableName(),
@@ -261,7 +255,6 @@ class Database
 
             /** @var $constraintObject \Zend\Db\Metadata\Object\ConstraintObject */
             foreach ($metadata->getConstraints($tableName) as $constraintObject) {
-
                 if ('PRIMARY KEY' === $constraintObject->getType()) {
                     foreach ($constraintObject->getColumns() as $columnName) {
                         $scheme[$columnName]['PRIMARY'] = true;
@@ -274,7 +267,6 @@ class Database
             $this->indexes[$tableName] = $this->getIndexListFromTable($tableName);
 
             if (isset($this->options['loaddata']) && $this->options['loaddata'] == true) {
-
                 $sql = new Sql($this->db);
                 $this->data[$tableName] = $sql->prepareStatementForSqlObject($sql->select($tableName))->execute();
             }
@@ -338,7 +330,6 @@ class Database
     public function fromString($jsonString)
     {
         if (!empty($jsonString)) {
-
             $dec = json_decode($jsonString, true);
 
             $this->indexes = $dec['indexes'];

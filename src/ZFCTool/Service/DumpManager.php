@@ -198,7 +198,6 @@ class DumpManager
         $database = new Database($this->db, $this->getOptions($whitelist, $blacklist));
 
         if ($dump = $database->getDump()) {
-
             $path = $this->getDumpsDirectoryPath($module);
 
             if (!$name) {
@@ -229,7 +228,6 @@ class DumpManager
         $path = $this->getDumpsDirectoryPath($module);
 
         if (is_file($path . DIRECTORY_SEPARATOR . $name)) {
-
             $dump = file_get_contents($path . DIRECTORY_SEPARATOR . $name);
 
             return $this->db->query($dump, Adapter::QUERY_MODE_EXECUTE);
@@ -248,7 +246,6 @@ class DumpManager
     protected function strToArray($str)
     {
         if (!empty($str)) {
-
             if (strpos($str, ',')) {
                 return explode(',', $str);
             }

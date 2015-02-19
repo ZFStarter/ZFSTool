@@ -127,7 +127,6 @@ class MigrationController extends AbstractActionController
             $migrations = $this->manager->listMigrations($module);
 
             foreach ($migrations as $migration) {
-
                 $color = null;
                 $bgColor = null;
                 $prefix = '';
@@ -217,7 +216,6 @@ class MigrationController extends AbstractActionController
         $migration = $this->request->getParam('to');
 
         try {
-
             $this->manager->commit($module, $migration);
 
             $this->console->writeLine('Migration "' . $migration . '" committed', Color::GREEN);
@@ -242,7 +240,6 @@ class MigrationController extends AbstractActionController
         $to = $this->request->getParam('to');
 
         try {
-
             $this->manager->down($module, $to);
 
             foreach ($this->manager->getMessages() as $message) {
@@ -270,7 +267,6 @@ class MigrationController extends AbstractActionController
         $migration = $this->request->getParam('to');
 
         try {
-
             $this->manager->up($module, $migration);
 
             foreach ($this->manager->getMessages() as $message) {
@@ -300,7 +296,6 @@ class MigrationController extends AbstractActionController
         $blackList = $this->request->getParam('blacklist');
 
         try {
-
             $result = $this->manager->generateMigration($module, $blackList, $whiteList, true);
 
             if (!empty($result)) {
@@ -341,7 +336,6 @@ class MigrationController extends AbstractActionController
         }
 
         try {
-
             $this->getManager()->rollback($module, $step);
 
             foreach ($this->manager->getMessages() as $message) {
@@ -369,7 +363,6 @@ class MigrationController extends AbstractActionController
         }
 
         try {
-
             $revision = $this->getManager()->getLastMigration($module);
             if ('0' == $revision['id']) {
                 $this->console->writeLine('None');

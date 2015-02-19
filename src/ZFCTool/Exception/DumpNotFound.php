@@ -6,7 +6,6 @@
 
 namespace ZFCTool\Exception;
 
-
 class DumpNotFound extends ZFCToolException
 {
 

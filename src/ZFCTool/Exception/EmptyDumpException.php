@@ -6,7 +6,6 @@
 
 namespace ZFCTool\Exception;
 
-
 class EmptyDumpException extends ZFCToolException
 {
 
