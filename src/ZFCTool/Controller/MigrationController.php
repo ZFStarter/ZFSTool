@@ -124,6 +124,9 @@ class MigrationController extends AbstractActionController
         $this->console->writeLine('C - Conflict, not loaded', null, Color::RED);
         $this->console->writeLine(str_pad('', $this->console->getWidth(), '-'));
 
+        //Display legend
+        $this->console->writeLine("|state\t|migration\t\t|module", Color::GRAY);
+
         try {
             $manager = $this->getManager();
             $migrations = $this->manager->listMigrations($module, $scanFolders);
@@ -153,7 +156,7 @@ class MigrationController extends AbstractActionController
                 }
 
                 //Display all migrations
-                $this->console->writeLine($prefix . ' ' . $migration['name'], $color, $bgColor);
+                $this->console->writeLine("$prefix\t{$migration['name']}\t{$migration['module']}", $color, $bgColor);
             }
 
             $this->console->writeLine(str_pad('', $this->console->getWidth(), '-'));
