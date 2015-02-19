@@ -445,23 +445,28 @@ class MigrationManager
      * Method returns array of exists in filesystem migrations
      *
      * @param string $module Module name
+     * @param bool   $scanModuleDirectories Looking for migrations in site root dir
      * @return array
      */
-    public function getExistsMigrations($module = null)
+    public function getExistsMigrations($module = null, $scanModuleDirectories = false)
     {
-        $filesDirty = scandir($this->getMigrationsDirectoryPath($module));
+        $modulePaths = $this->getMigrationsDirectoryPaths($module, $scanModuleDirectories);
 
         $migrations = array();
-        // foreach loop for $filesDirty array
-        foreach ($filesDirty as $file) {
-            if (preg_match('/\d{8}_\d{6}_\d{2}\.php$/', $file)
-                || preg_match('/\d{8}_\d{6}_\d{2}_[A-z0-9]*\.php$/', $file)
-            ) {
-                array_push($migrations, substr($file, 0, -4));
+
+        foreach ($modulePaths as $moduleName => $modulePath) {
+            $filesDirty = scandir($modulePath);
+
+            // foreach loop for $filesDirty array
+            foreach ($filesDirty as $file) {
+                if (preg_match('/(\d{8}_\d{6}_\d{2}[_]*[A-z0-9]*)\.php$/', $file, $match)) {
+                    $migrations[$moduleName][] = $match[1];
+                }
             }
+
         }
 
-        sort($migrations);
+        $this->sortMigrations($migrations);
 
         return $migrations;
     }
@@ -491,7 +496,7 @@ class MigrationManager
 
         $migrations = array();
         foreach ($items as $item) {
-            $migrations[] = $item['migration'];
+            $migrations[$item['module']][] = $item['migration'];
         }
 
         return $migrations;
