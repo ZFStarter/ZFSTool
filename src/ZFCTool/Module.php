@@ -50,16 +50,19 @@ class Module implements ConsoleUsageProviderInterface, AutoloaderProviderInterfa
         return array(
             'Migrations:',
 
-            'ls migrations [--module]' => '- List of exist migrations',
+            'ls migrations [--module] [-scan]' => '- List of exist migrations',
             array('--module', '(Optional) Module name'),
+            array('-scan', '(Optional) Scan modules folders for migrations'),
 
-            'up db <to> [--module]' => '- Update DB to selected migration',
+            'up db <to> [--module] [-scan]' => '- Update DB to selected migration',
             array('--module', '(Optional) Module name'),
             array('to', '(Optional) Migration name'),
+            array('-scan', '(Optional) Scan modules folders for migrations'),
 
-            'down db <to> [--module]' => '- Downgrade selected migration from DB',
+            'down db <to> [--module] [-scan]' => '- Downgrade selected migration from DB',
             array('--module', '(Optional) Module name'),
             array('to', '(Optional) Migration name'),
+            array('-scan', '(Optional) Scan modules folders for migrations'),
 
             'show migration [--module]' => '- Show current migration',
             array('--module', '(Optional) Module name'),
@@ -71,13 +74,15 @@ class Module implements ConsoleUsageProviderInterface, AutoloaderProviderInterfa
             array('-c', '(Optional) Create and commit migration'),
             array('-e', '(Optional) Create empty migration'),
 
-            'ci migration <to> [--module]' => '- Commit selected migration to DB',
+            'ci migration <to> [--module] [-scan]' => '- Commit selected migration to DB',
             array('--module', '(Optional) Module name'),
             array('to', 'To migration'),
+            array('-scan', '(Optional) Scan modules folders for migrations'),
 
-            'back db [--module] [--step]' => '- Rollback DB',
+            'back db [--module] [--step] [-scan]' => '- Rollback DB',
             array('--module', '(Optional) Module name'),
             array('--step', 'Count of rollback migrations'),
+            array('-scan', '(Optional) Scan modules folders for migrations'),
 
             'diff db [--module] [--whitelist] [--blacklist]' => '- Show generated queries without creating migration',
             array('--module', '(Optional) Module name'),
@@ -86,6 +91,11 @@ class Module implements ConsoleUsageProviderInterface, AutoloaderProviderInterfa
 
 
             'Dump:',
+
+            'ls dump [--module] [-scan]' => '- List of exist dump',
+            array('--module', '(Optional) Module name'),
+            array('-scan', '(Optional) Scan modules folders for dumps'),
+
             'create dump [--module] [--name] [--whitelist] [--blacklist]' => '- Creating dump',
             array('--module', '(Optional) Module name'),
             array('--name', '(Optional) Dump file name'),

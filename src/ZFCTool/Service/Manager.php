@@ -77,17 +77,6 @@ class Manager
     }
 
     /**
-     * Set dumps directory name
-     *
-     * @param string $name
-     */
-    public function setDumpsDirectoryName($name)
-    {
-        $this->options['dumpsDirectoryName'] = $name;
-    }
-
-
-    /**
      * Method returns path to $dirName directory
      *
      * @param string $dirName
@@ -178,6 +167,10 @@ class Manager
 
         if ($scanModuleDirectories) {
             foreach ($modulePaths as $path) {
+                if (!is_dir($path)) {
+                    continue;
+                }
+
                 $filesDirty = array_diff(scandir($path), array('.', '..'));
 
                 foreach ($filesDirty as $dir) {
