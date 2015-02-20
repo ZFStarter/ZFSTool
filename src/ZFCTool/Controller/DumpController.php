@@ -171,10 +171,10 @@ class DumpController extends AbstractActionController
         if ($module) {
             $this->console->writeLine('Only for module "' . $module . '":');
         }
-        $scanFolders = $this->request->getParam('scanfolders');
+        $includeModules = $this->request->getParam('includemodules');
 
         try {
-            $dumps = $this->manager->getExistsDumps($module, $scanFolders);
+            $dumps = $this->manager->getExistsDumps($module, $includeModules);
 
             if ($dumps) {
                 //Display legend

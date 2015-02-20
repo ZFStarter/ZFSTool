@@ -114,7 +114,7 @@ class MigrationController extends AbstractActionController
             $this->console->writeLine('Only for module "' . $module . '":');
         }
 
-        $scanFolders = $this->request->getParam('scanfolders');
+        $includeModules = $this->request->getParam('includemodules');
 
         //Display mini-help
         $this->console->writeLine(str_pad('', $this->console->getWidth(), '-'));
@@ -129,7 +129,7 @@ class MigrationController extends AbstractActionController
 
         try {
             $manager = $this->getManager();
-            $migrations = $this->manager->listMigrations($module, $scanFolders);
+            $migrations = $this->manager->listMigrations($module, $includeModules);
 
             foreach ($migrations as $migration) {
                 $color = null;
@@ -219,10 +219,10 @@ class MigrationController extends AbstractActionController
             $this->console->writeLine('Only for module "' . $module . '":');
         }
         $migration = $this->request->getParam('to');
-        $scanFolders = $this->request->getParam('scanfolders');
+        $includeModules = $this->request->getParam('includemodules');
 
         try {
-            $this->manager->commit($module, $migration, $scanFolders);
+            $this->manager->commit($module, $migration, $includeModules);
 
             $this->console->writeLine('Migration "' . $migration . '" committed', Color::GREEN);
 
@@ -244,10 +244,10 @@ class MigrationController extends AbstractActionController
             $this->console->writeLine('Only for module "' . $module . '":');
         }
         $to = $this->request->getParam('to');
-        $scanFolders = $this->request->getParam('scanfolders');
+        $includeModules = $this->request->getParam('includemodules');
 
         try {
-            $this->manager->down($module, $to, $scanFolders);
+            $this->manager->down($module, $to, $includeModules);
 
             foreach ($this->manager->getMessages() as $message) {
                 $this->console->writeLine($message, Color::GREEN);
@@ -272,10 +272,10 @@ class MigrationController extends AbstractActionController
             $this->console->writeLine('Only for module "' . $module . '":');
         }
         $migration = $this->request->getParam('to');
-        $scanFolders = $this->request->getParam('scanfolders');
+        $includeModules = $this->request->getParam('includemodules');
 
         try {
-            $this->manager->up($module, $migration, $scanFolders);
+            $this->manager->up($module, $migration, $includeModules);
 
             foreach ($this->manager->getMessages() as $message) {
                 $this->console->writeLine($message, Color::GREEN);
@@ -342,10 +342,10 @@ class MigrationController extends AbstractActionController
         if (!$step) {
             $step = 1;
         }
-        $scanFolders = $this->request->getParam('scanfolders');
+        $includeModules = $this->request->getParam('includemodules');
 
         try {
-            $this->getManager()->rollback($module, $step, $scanFolders);
+            $this->getManager()->rollback($module, $step, $includeModules);
 
             foreach ($this->manager->getMessages() as $message) {
                 $this->console->writeLine($message, Color::GREEN);
