@@ -116,7 +116,7 @@ class DumpControllerTest extends AbstractConsoleControllerTestCase
             . DIRECTORY_SEPARATOR . self::DUMP_FILE_NAME;
         if (is_file($dumpFullPath)) {
             // dispatch url
-            $this->dispatch('ls dump --scan');
+            $this->dispatch('ls dump -s');
 
             $this->assertResponseStatusCode(0);
             $this->assertActionName('list');
