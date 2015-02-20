@@ -84,7 +84,7 @@ class Manager
      * @return string
      * @throws ZFCToolException
      */
-    public function getDirectoryPath($dirName, $module = null)
+    protected function getDirectoryPath($dirName, $module = null)
     {
         if (null == $module) {
             $path = $this->getProjectDirectoryPath();
@@ -133,7 +133,7 @@ class Manager
      * @return array
      * @throws ZFCToolException
      */
-    public function getDirectoryPaths($dirName, $module = null, $scanModuleDirectories = false)
+    protected function getDirectoryPaths($dirName, $module = null, $scanModuleDirectories = false)
     {
         $modulePaths = $this->getModulesDirectoryPath();
 
@@ -197,7 +197,7 @@ class Manager
      * @param array  $modulePaths
      * @return array
      */
-    public function getExistsFiles($ext, $modulePaths)
+    protected function getExistsFiles($ext, $modulePaths)
     {
         $files = array();
 
@@ -254,9 +254,9 @@ class Manager
      * @param array $array
      * @param string $order
      */
-    public function sortArray(&$array, $order = 'ASC')
+    protected function sortArray(&$array, $order = 'ASC')
     {
-        if (!$array || count($array) < 1) {
+        if (!count($array)) {
             return;
         }
 
@@ -291,7 +291,7 @@ class Manager
      * @param array $aArray2
      * @return array
      */
-    public function arrayDiff($aArray1, $aArray2)
+    protected function arrayDiff($aArray1, $aArray2)
     {
         $aReturn = array();
 
@@ -321,7 +321,7 @@ class Manager
      * @param array $array
      * @return mixed
      */
-    public function getArrayKey($needle, $array)
+    protected function getArrayKey($needle, $array)
     {
         foreach ($array as $key => $value) {
             foreach ($value as $item) {
@@ -342,7 +342,7 @@ class Manager
      * @param bool $strict
      * @return bool
      */
-    public function valueInArray($needle, $haystack, $strict = false)
+    protected function valueInArray($needle, $haystack, $strict = false)
     {
         foreach ($haystack as $item) {
             if (($strict ? $item === $needle : $item == $needle) ||
@@ -361,7 +361,7 @@ class Manager
      * @param array $array2
      * @return array
      */
-    public function arraysMerge(array $array1, array $array2)
+    protected function arraysMerge(array $array1, array $array2)
     {
         $merged = array_merge_recursive($array1, $array2);
 

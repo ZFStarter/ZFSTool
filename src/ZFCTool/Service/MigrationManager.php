@@ -297,7 +297,7 @@ class MigrationManager extends Manager
      * @param bool   $scanModuleDirectories Looking for migrations in site root dir
      * @return array
      */
-    public function getExistsMigrations($module = null, $scanModuleDirectories = false)
+    protected function getExistsMigrations($module = null, $scanModuleDirectories = false)
     {
         $modulePaths = $this->getMigrationsDirectoryPaths($module, $scanModuleDirectories);
 
@@ -311,7 +311,7 @@ class MigrationManager extends Manager
      * @param string $module Module name
      * @return array
      */
-    public function getLoadedMigrations($module = null)
+    protected function getLoadedMigrations($module = null)
     {
         $sql = new Sql($this->db);
         $select = $sql->select()
