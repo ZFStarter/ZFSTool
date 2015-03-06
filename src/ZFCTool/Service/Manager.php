@@ -278,8 +278,8 @@ class Manager
                 }
 
                 return (reset($a) < reset($b)) ?
-                    ($order == 'ASC' ? -1 : 1) :
-                    (end($a) > end($b)) ? ($order == 'ASC' ? 1 : -1) : 0;
+                    ($order == 'ASC' ? 1 : -1) :
+                    (end($a) > end($b)) ? ($order == 'ASC' ? -1 : 1) : 0;
             });
         }
     }
