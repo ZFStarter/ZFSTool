@@ -268,7 +268,7 @@ class Manager
                 rsort($array[key($array)]);
             }
         } else {
-            uasort($array, function(&$a, &$b) use ($order) {
+            uasort($array, function (&$a, &$b) use ($order) {
                 if ($order == 'ASC') {
                     sort($a);
                     sort($b);
