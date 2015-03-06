@@ -277,9 +277,7 @@ class Manager
                     rsort($b);
                 }
 
-                return (reset($a) < reset($b)) ?
-                    ($order == 'ASC' ? 1 : -1) :
-                    (end($a) > end($b)) ? ($order == 'ASC' ? -1 : 1) : 0;
+                return (reset($a) < reset($b)) ? 1 : (end($a) > end($b)) ? -1 : 0;
             });
         }
     }
