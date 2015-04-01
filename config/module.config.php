@@ -31,7 +31,7 @@ return array(
             'routes' => array(
                 'listing-migration' => array(
                     'options' => array(
-                        'route' => '(listing|list|ls) migrations [--module=]',
+                        'route' => '(listing|list|ls) migrations [--module=] [--include-modules|-i]:includemodules',
                         'defaults' => array(
                             'controller' => 'ZFCTool\Controller\Migration',
                             'action' => 'list'
@@ -49,7 +49,7 @@ return array(
                 ),
                 'commit-migration' => array(
                     'options' => array(
-                        'route' => '(commit|ci) migration <to> [--module=]',
+                        'route' => '(commit|ci) migration <to> [--module=] [--include-modules|-i]:includemodules',
                         'defaults' => array(
                             'controller' => 'ZFCTool\Controller\Migration',
                             'action' => 'commit'
@@ -58,7 +58,7 @@ return array(
                 ),
                 'down-db' => array(
                     'options' => array(
-                        'route' => 'down db [<to>] [--module=]',
+                        'route' => 'down db [<to>] [--module=] [--include-modules|-i]:includemodules',
                         'defaults' => array(
                             'controller' => 'ZFCTool\Controller\Migration',
                             'action' => 'down'
@@ -67,7 +67,7 @@ return array(
                 ),
                 'up-db' => array(
                     'options' => array(
-                        'route' => 'up db [<to>] [--module=]',
+                        'route' => 'up db [<to>] [--module=] [--include-modules|-i]:includemodules',
                         'defaults' => array(
                             'controller' => 'ZFCTool\Controller\Migration',
                             'action' => 'up'
@@ -85,7 +85,7 @@ return array(
                 ),
                 'rollback-db' => array(
                     'options' => array(
-                        'route' => '(rollback|back) db [--module=] [--step=]',
+                        'route' => '(rollback|back) db [--module=] [--step=] [--include-modules|-i]:includemodules',
                         'defaults' => array(
                             'controller' => 'ZFCTool\Controller\Migration',
                             'action' => 'rollback'
@@ -116,6 +116,15 @@ return array(
                         'defaults' => array(
                             'controller' => 'ZFCTool\Controller\Dump',
                             'action' => 'import'
+                        )
+                    )
+                ),
+                'listing-dump' => array(
+                    'options' => array(
+                        'route' => '(listing|list|ls) dump [--module=] [--include-modules|-i]:includemodules',
+                        'defaults' => array(
+                            'controller' => 'ZFCTool\Controller\Dump',
+                            'action' => 'list'
                         )
                     )
                 ),

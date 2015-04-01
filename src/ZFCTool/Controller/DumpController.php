@@ -124,7 +124,6 @@ class DumpController extends AbstractActionController
         $manager = $this->getManager();
 
         try {
-
             $result = $manager->create($module, $name, $whitelist, $blacklist);
 
             if ($result) {
@@ -150,12 +149,43 @@ class DumpController extends AbstractActionController
         $name = $this->request->getParam('name');
 
         try {
-
             $result = $manager->import($name, $module);
             if ($result) {
                 $this->console->writeLine('Database dump "' . $name . '" imported!', Color::GREEN);
             }
 
+        } catch (ZFCToolException $e) {
+            $this->console->writeLine($e->getMessage(), Color::RED);
+        } catch (\Exception $e) {
+            $this->console->writeLine($e->getMessage(), Color::RED);
+        }
+    }
+
+
+    /**
+     * list dump files
+     */
+    public function listAction()
+    {
+        $module = $this->request->getParam('module');
+        if ($module) {
+            $this->console->writeLine('Only for module "' . $module . '":');
+        }
+        $includeModules = $this->request->getParam('includemodules');
+
+        try {
+            $dumps = $this->manager->getExistsDumps($module, $includeModules);
+
+            if ($dumps) {
+                //Display legend
+                $this->console->writeLine("|dump\t\t\t|module", Color::GRAY);
+            }
+
+            foreach ($dumps as $module => $dump) {
+                foreach ($dump as $file) {
+                    $this->console->writeLine("{$file}\t{$module}", Color::GREEN, null);
+                }
+            }
         } catch (ZFCToolException $e) {
             $this->console->writeLine($e->getMessage(), Color::RED);
         } catch (\Exception $e) {

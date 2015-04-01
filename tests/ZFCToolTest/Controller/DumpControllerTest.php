@@ -18,7 +18,7 @@ class DumpControllerTest extends AbstractConsoleControllerTestCase
 {
     const FIXTURE_MODULE = 'simplemodule';
 
-    const DUMP_FILE_NAME = 'testdump';
+    const DUMP_FILE_NAME = 'testdump.sql';
 
     const TABLE_NAME = 'test_table';
 
@@ -99,9 +99,32 @@ class DumpControllerTest extends AbstractConsoleControllerTestCase
             $result = self::$db->query("SHOW TABLES LIKE '" . self::TABLE_NAME . "';", Adapter::QUERY_MODE_EXECUTE);
 
             $this->assertEquals(1, $result->count());
-            unlink($dumpFullPath);
+
             $db = new Mysql(self::$db);
             $db->dropTable(self::TABLE_NAME);
+        } else {
+            $this->fail('Dump file not exist!');
+        }
+    }
+
+    /**
+     * @depends testCreateDumpSuccess
+     */
+    public function testListDumpSuccess()
+    {
+        $dumpFullPath = self::$manager->getDumpsDirectoryPath()
+            . DIRECTORY_SEPARATOR . self::DUMP_FILE_NAME;
+        if (is_file($dumpFullPath)) {
+            // dispatch url
+            $this->dispatch('ls dump -i');
+
+            $this->assertResponseStatusCode(0);
+            $this->assertActionName('list');
+            $this->assertControllerName('ZFCTool\Controller\Dump');
+            $this->assertControllerClass('DumpController');
+            $this->assertMatchedRouteName('listing-dump');
+
+            unlink($dumpFullPath);
         } else {
             $this->fail('Dump file not exist!');
         }

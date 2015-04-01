@@ -114,6 +114,8 @@ class MigrationController extends AbstractActionController
             $this->console->writeLine('Only for module "' . $module . '":');
         }
 
+        $includeModules = $this->request->getParam('includemodules');
+
         //Display mini-help
         $this->console->writeLine(str_pad('', $this->console->getWidth(), '-'));
         $this->console->writeLine('L - Already loaded', Color::GREEN);
@@ -122,12 +124,14 @@ class MigrationController extends AbstractActionController
         $this->console->writeLine('C - Conflict, not loaded', null, Color::RED);
         $this->console->writeLine(str_pad('', $this->console->getWidth(), '-'));
 
+        //Display legend
+        $this->console->writeLine("|state\t|migration\t\t|module", Color::GRAY);
+
         try {
             $manager = $this->getManager();
-            $migrations = $this->manager->listMigrations($module);
+            $migrations = $this->manager->listMigrations($module, $includeModules);
 
             foreach ($migrations as $migration) {
-
                 $color = null;
                 $bgColor = null;
                 $prefix = '';
@@ -152,7 +156,7 @@ class MigrationController extends AbstractActionController
                 }
 
                 //Display all migrations
-                $this->console->writeLine($prefix . ' ' . $migration['name'], $color, $bgColor);
+                $this->console->writeLine("$prefix\t{$migration['name']}\t{$migration['module']}", $color, $bgColor);
             }
 
             $this->console->writeLine(str_pad('', $this->console->getWidth(), '-'));
@@ -215,10 +219,10 @@ class MigrationController extends AbstractActionController
             $this->console->writeLine('Only for module "' . $module . '":');
         }
         $migration = $this->request->getParam('to');
+        $includeModules = $this->request->getParam('includemodules');
 
         try {
-
-            $this->manager->commit($module, $migration);
+            $this->manager->commit($module, $migration, $includeModules);
 
             $this->console->writeLine('Migration "' . $migration . '" committed', Color::GREEN);
 
@@ -240,10 +244,10 @@ class MigrationController extends AbstractActionController
             $this->console->writeLine('Only for module "' . $module . '":');
         }
         $to = $this->request->getParam('to');
+        $includeModules = $this->request->getParam('includemodules');
 
         try {
-
-            $this->manager->down($module, $to);
+            $this->manager->down($module, $to, $includeModules);
 
             foreach ($this->manager->getMessages() as $message) {
                 $this->console->writeLine($message, Color::GREEN);
@@ -268,10 +272,10 @@ class MigrationController extends AbstractActionController
             $this->console->writeLine('Only for module "' . $module . '":');
         }
         $migration = $this->request->getParam('to');
+        $includeModules = $this->request->getParam('includemodules');
 
         try {
-
-            $this->manager->up($module, $migration);
+            $this->manager->up($module, $migration, $includeModules);
 
             foreach ($this->manager->getMessages() as $message) {
                 $this->console->writeLine($message, Color::GREEN);
@@ -300,7 +304,6 @@ class MigrationController extends AbstractActionController
         $blackList = $this->request->getParam('blacklist');
 
         try {
-
             $result = $this->manager->generateMigration($module, $blackList, $whiteList, true);
 
             if (!empty($result)) {
@@ -339,10 +342,10 @@ class MigrationController extends AbstractActionController
         if (!$step) {
             $step = 1;
         }
+        $includeModules = $this->request->getParam('includemodules');
 
         try {
-
-            $this->getManager()->rollback($module, $step);
+            $this->getManager()->rollback($module, $step, $includeModules);
 
             foreach ($this->manager->getMessages() as $message) {
                 $this->console->writeLine($message, Color::GREEN);
@@ -369,7 +372,6 @@ class MigrationController extends AbstractActionController
         }
 
         try {
-
             $revision = $this->getManager()->getLastMigration($module);
             if ('0' == $revision['id']) {
                 $this->console->writeLine('None');

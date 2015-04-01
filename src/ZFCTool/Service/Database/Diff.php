@@ -139,7 +139,6 @@ class Diff
     {
         if (sizeof($this->commonTables) > 0) {
             foreach ($this->commonTables as $tblName => $table) {
-
                 $currentTable = $this->currentDb->getTableColumns($tblName);
                 $publishedTable = $this->publishedDb->getTableColumns($tblName);
 
@@ -179,7 +178,6 @@ class Diff
 
 
         foreach ($tblPublishedCols as $publishedColumn) {
-
             $has = $this->checkColumnExists($publishedColumn, $tblCurrentCols);
 
             if (!$has) {
@@ -283,7 +281,6 @@ class Diff
         foreach ($publishedIndexes as $publishedIndex) {
             $exist = false;
             foreach ($currentIndexes as $currentIndex) {
-
                 if ($currentIndex['name'] === $publishedIndex['name']) {
                     $exist = true;
                     break;

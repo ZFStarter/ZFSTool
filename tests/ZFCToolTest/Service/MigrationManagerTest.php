@@ -240,6 +240,17 @@ class MigrationManagerTest extends \PHPUnit_Framework_TestCase
     public function testListMigrations()
     {
         $manager = self::$manager;
+        // List migrations with modules scan
+        $migrations = self::$manager->listMigrations(null, true);
+        $this->assertTrue(is_array($migrations));
+        $this->assertCount(10, $migrations);
+
+        foreach ($migrations as $migration) {
+            $this->assertArrayHasKey('name', $migration);
+            $this->assertArrayHasKey('type', $migration);
+            $this->assertEquals($manager::MIGRATION_TYPE_READY, $migration['type']);
+        }
+
         $migrations = self::$manager->listMigrations();
         $this->assertTrue(is_array($migrations));
         $this->assertCount(5, $migrations);

@@ -30,7 +30,7 @@ use ZFCTool\Exception\MigrationNotExistsException;
 use ZFCTool\Service\Migration\AbstractMigration;
 use ZFCTool\Service\Database\Diff;
 
-class MigrationManager
+class MigrationManager extends Manager
 {
 
     //Migration status type
@@ -129,60 +129,6 @@ class MigrationManager
 
 
     /**
-     * Method return application directory path
-     *
-     * @throws ZFCToolException
-     * @return string
-     */
-    public function getProjectDirectoryPath()
-    {
-        if (null == $this->options['projectDirectoryPath']) {
-            throw new ZFCToolException('Project directory path undefined.');
-        }
-
-        return $this->options['projectDirectoryPath'];
-    }
-
-    /**
-     * Method set application directory path
-     *
-     * @param  string $value
-     * @return MigrationManager
-     */
-    public function setProjectDirectoryPath($value)
-    {
-        $this->options['projectDirectoryPath'] = $value;
-        return $this;
-    }
-
-    /**
-     * Method return application directory path
-     *
-     * @throws ZFCToolException
-     * @return string
-     */
-    public function getModulesDirectoryPath()
-    {
-        if (null == $this->options['modulesDirectoryPath']) {
-            throw new ZFCToolException('Modules directory path undefined.');
-        }
-
-        return $this->options['modulesDirectoryPath'];
-    }
-
-    /**
-     * Method set application directory path
-     *
-     * @param string $value
-     * @return MigrationManager
-     */
-    public function setModulesDirectoryPath($value)
-    {
-        $this->options['modulesDirectoryPath'] = $value;
-        return $this;
-    }
-
-    /**
      * Method get migrations directory name
      *
      * @throws ZFCToolException
@@ -217,24 +163,21 @@ class MigrationManager
      */
     public function getMigrationsDirectoryPath($module = null)
     {
-        if (null == $module) {
-            $path = $this->getProjectDirectoryPath();
-            $path .= '/' . $this->getMigrationsDirectoryName();
-        } else {
-            $modulePath = $this->getModulesDirectoryPath() . '/' . $module;
-
-            if (!file_exists($modulePath)) {
-                throw new ZFCToolException("Module `$module` not exists.");
-            }
-
-            $path = $modulePath . '/' . $this->getMigrationsDirectoryName();
-        }
-
-        $this->preparePath($path);
-
-        return $path;
+        return $this->getDirectoryPath($this->getMigrationsDirectoryName(), $module);
     }
 
+    /**
+     * Method returns path to migrations directories
+     *
+     * @param null $module Module name
+     * @param bool $scanModuleDirectories Looking for migrations in site root dir
+     * @return array
+     * @throws ZFCToolException
+     */
+    public function getMigrationsDirectoryPaths($module = null, $scanModuleDirectories = false)
+    {
+        return $this->getDirectoryPaths($this->getMigrationsDirectoryName(), $module, $scanModuleDirectories);
+    }
 
     /**
      * Method return migrations schema table
@@ -348,42 +291,17 @@ class MigrationManager
     }
 
     /**
-     * Method prepare path (create not existing dirs)
-     *
-     * @param string $path
-     */
-    protected function preparePath($path)
-    {
-        if (!is_dir($path)) {
-            $this->preparePath(dirname($path));
-            mkdir($path, 0777);
-        }
-    }
-
-
-    /**
      * Method returns array of exists in filesystem migrations
      *
      * @param string $module Module name
+     * @param bool   $scanModuleDirectories Looking for migrations in site root dir
      * @return array
      */
-    public function getExistsMigrations($module = null)
+    protected function getExistsMigrations($module = null, $scanModuleDirectories = false)
     {
-        $filesDirty = scandir($this->getMigrationsDirectoryPath($module));
+        $modulePaths = $this->getMigrationsDirectoryPaths($module, $scanModuleDirectories);
 
-        $migrations = array();
-        // foreach loop for $filesDirty array
-        foreach ($filesDirty as $file) {
-            if (preg_match('/\d{8}_\d{6}_\d{2}\.php$/', $file)
-                || preg_match('/\d{8}_\d{6}_\d{2}_[A-z0-9]*\.php$/', $file)
-            ) {
-                array_push($migrations, substr($file, 0, -4));
-            }
-        }
-
-        sort($migrations);
-
-        return $migrations;
+        return $this->getExistsFiles('php', $modulePaths);
     }
 
 
@@ -393,7 +311,7 @@ class MigrationManager
      * @param string $module Module name
      * @return array
      */
-    public function getLoadedMigrations($module = null)
+    protected function getLoadedMigrations($module = null)
     {
         $sql = new Sql($this->db);
         $select = $sql->select()
@@ -411,28 +329,10 @@ class MigrationManager
 
         $migrations = array();
         foreach ($items as $item) {
-            $migrations[] = $item['migration'];
+            $migrations[$item['module']][] = $item['migration'];
         }
 
         return $migrations;
-    }
-
-    /**
-     * execute array from string
-     * @param $str
-     * @return array
-     */
-    protected function strToArray($str)
-    {
-        if (!empty($str)) {
-
-            if (strpos($str, ',')) {
-                return explode(',', $str);
-            }
-            return array($str);
-        } else {
-            return array();
-        }
     }
 
 
@@ -512,49 +412,51 @@ class MigrationManager
      * Listing migrations
      *
      * @param null|string $module
+     * @param bool $scanModuleDirectories Looking for migrations in site root dir
      * @return array
      */
-    public function listMigrations($module = null)
+    public function listMigrations($module = null, $scanModuleDirectories = false)
     {
         $result = array();
         $lastMigration = $this->getLastMigration($module);
         $lastMigrationName = $lastMigration['migration'];
 
-        $exists = $this->getExistsMigrations($module);
+        $exists = $this->getExistsMigrations($module, $scanModuleDirectories);
         $loaded = $this->getLoadedMigrations($module);
 
-        $migrations = array_merge($exists, $loaded);
-        $migrations = array_unique($migrations);
+        $migrations = $this->arraysMerge($exists, $loaded);
 
-        sort($migrations);
+        $this->sortArray($migrations);
 
-        foreach ($migrations as $migration) {
-            $v = 0;
-            if (in_array($migration, $exists)) {
-                $v = $v + 1;
+        foreach ($migrations as $moduleName => $migrationArray) {
+            foreach ($migrationArray as $migration) {
+                $v = 0;
+                if ($this->valueInArray($migration, $exists)) {
+                    $v = $v + 1;
+                }
+                if ($this->valueInArray($migration, $loaded)) {
+                    $v = $v + 2;
+                }
+
+                $type = self::MIGRATION_TYPE_READY;
+
+                switch ($v) {
+                    case 1:
+                        if ($migration < $lastMigrationName) {
+                            $type = self::MIGRATION_TYPE_CONFLICT;
+                        } else {
+                            $type = self::MIGRATION_TYPE_READY;
+                        }
+                        break;
+                    case 2:
+                        $type = self::MIGRATION_TYPE_NOT_EXIST;
+                        break;
+                    case 3:
+                        $type = self::MIGRATION_TYPE_LOADED;
+                        break;
+                }
+                $result[] = array('module' => $moduleName, 'name' => $migration, 'type' => $type);
             }
-            if (in_array($migration, $loaded)) {
-                $v = $v + 2;
-            }
-
-            $type = self::MIGRATION_TYPE_READY;
-
-            switch ($v) {
-                case 1:
-                    if ($migration < $lastMigrationName) {
-                        $type = self::MIGRATION_TYPE_CONFLICT;
-                    } else {
-                        $type = self::MIGRATION_TYPE_READY;
-                    }
-                    break;
-                case 2:
-                    $type = self::MIGRATION_TYPE_NOT_EXIST;
-                    break;
-                case 3:
-                    $type = self::MIGRATION_TYPE_LOADED;
-                    break;
-            }
-            $result[] = array('name' => $migration, 'type' => $type);
         }
         return $result;
     }
@@ -609,10 +511,11 @@ class MigrationManager
     /**
      * @param $module
      * @param $migration
+     * @param bool $scanModuleDirectories Looking for migrations in site root dir
      * @return mixed
      * @throws ZFCToolException
      */
-    public function commit($module, $migration)
+    public function commit($module, $migration, $scanModuleDirectories = false)
     {
         $lastMigration = $this->getLastMigration($module);
 
@@ -623,15 +526,15 @@ class MigrationManager
                 throw new CurrentMigrationException("Migration `$migration` is current");
             }
 
-            $exists = $this->getExistsMigrations($module);
+            $exists = $this->getExistsMigrations($module, $scanModuleDirectories);
 
-            if (!in_array($migration, $exists)) {
+            if (!$this->valueInArray($migration, $exists)) {
                 throw new MigrationNotExistsException("Migration `$migration` not exists");
             }
 
             $loaded = $this->getLoadedMigrations($module);
 
-            if (in_array($migration, $loaded)) {
+            if ($this->valueInArray($migration, $loaded)) {
                 throw new MigrationExecutedException("Migration `$migration` already executed");
             }
 
@@ -705,7 +608,6 @@ class MigrationManager
         }
 
         try {
-
             $sql = new Sql($this->db);
             $delete = $sql->delete($this->getMigrationsSchemaTable());
             $delete->where(
@@ -730,9 +632,10 @@ class MigrationManager
      *
      * @param string $module Module name
      * @param string $to Migration name
+     * @param bool   $scanModuleDirectories Looking for migrations in site root dir
      * @throws \ZFCTool\Exception\ZFCToolException
      */
-    public function down($module, $to = null)
+    public function down($module, $to = null, $scanModuleDirectories = false)
     {
         $lastMigration = $this->getLastMigration($module);
         $lastMigration = $lastMigration['migration'];
@@ -753,69 +656,80 @@ class MigrationManager
             }
         }
 
-        $exists = $this->getExistsMigrations($module);
+        $exists = $this->getExistsMigrations($module, $scanModuleDirectories);
         $loaded = $this->getLoadedMigrations($module);
 
-        rsort($loaded);
+        $this->sortArray($loaded, 'DESC');
 
-        if (($to) && (!in_array($to, $loaded))) {
-
+        if (($to) && (!$this->valueInArray($to, $loaded))) {
             throw new MigrationNotLoadedException("Migration `$to` not loaded");
         }
 
-        foreach ($loaded as $migration) {
+        $modulePaths = $this->getMigrationsDirectoryPaths($module, $scanModuleDirectories);
 
-            if (!in_array($migration, $exists)) {
-                throw new MigrationNotExistsException("Migration `$migration` not exists");
-            }
+        foreach ($loaded as $moduleName => $migrationArray) {
+            foreach ($migrationArray as $migration) {
+                if (!$this->valueInArray($migration, $exists)) {
+                    throw new MigrationNotExistsException("Migration `$moduleName`.`$migration` not exists");
+                }
 
-            try {
-                $includePath = $this->getMigrationsDirectoryPath($module)
-                    . '/' . $migration . '.php';
+                try {
+                    if (empty($moduleName)) {
+                        $moduleName = $this->getArrayKey($migration, $exists);
+                    }
 
-                include_once $includePath;
-
-                $migrationClass = 'Migration_' . $migration;
-                $migrationObject = new $migrationClass($this->db);
-                /** @var AbstractMigration $migrationObject */
-                $migrationObject->setMigrationManager($this);
-
-                if (!$this->transactionFlag) {
-                    $connection = $migrationObject->getDbAdapter()->getDriver()->getConnection();
-                    $connection->beginTransaction();
-
-                    $this->transactionFlag = true;
-                    try {
-                        $migrationObject->down();
-                        $connection->commit();
-                    } catch (\Exception $e) {
-                        $connection->rollback();
+                    if (!isset($exists[$moduleName])) {
                         throw new ZFCToolException(
-                            "Migration `$migration` return exception:\n"
-                            . $e->getMessage() . ' in ' . $e->getFile() . '#' . $e->getLine()
+                            "Module `$moduleName` was not found\n"
                         );
                     }
-                    $this->transactionFlag = false;
-                } else {
-                    $migrationObject->down();
+
+                    $includePath = $modulePaths[$moduleName] . '/' . $migration . '.php';
+
+                    include_once $includePath;
+
+                    $migrationClass = 'Migration_' . $migration;
+                    $migrationObject = new $migrationClass($this->db);
+                    /** @var AbstractMigration $migrationObject */
+                    $migrationObject->setMigrationManager($this);
+
+                    if (!$this->transactionFlag) {
+                        $connection = $migrationObject->getDbAdapter()->getDriver()->getConnection();
+                        $connection->beginTransaction();
+
+                        $this->transactionFlag = true;
+                        try {
+                            $migrationObject->down();
+                            $connection->commit();
+                        } catch (\Exception $e) {
+                            $connection->rollback();
+                            throw new ZFCToolException(
+                                "Migration `$moduleName`.`$migration` return exception:\n"
+                                . $e->getMessage() . ' in ' . $e->getFile() . '#' . $e->getLine()
+                            );
+                        }
+                        $this->transactionFlag = false;
+                    } else {
+                        $migrationObject->down();
+                    }
+
+                    if ($module) {
+                        $this->addMessage($module . ": degrade revision `$migration`");
+                    } else {
+                        $this->addMessage("Degrade revision `$migration`");
+                    }
+
+                    $this->pullMigration($moduleName, $migration);
+                } catch (\Exception $e) {
+                    throw new ZFCToolException(
+                        "Migration `$moduleName`.`$migration` return exception:\n"
+                        . $e->getMessage() . ' in ' . $e->getFile() . '#' . $e->getLine()
+                    );
                 }
 
-                if ($module) {
-                    $this->addMessage($module . ": degrade revision `$migration`");
-                } else {
-                    $this->addMessage("Degrade revision `$migration`");
+                if (($to) && ($migration == $to)) {
+                    break;
                 }
-
-                $this->pullMigration($module, $migration);
-            } catch (\Exception $e) {
-                throw new ZFCToolException(
-                    "Migration `$module`.`$migration` return exception:\n"
-                    . $e->getMessage() . ' in ' . $e->getFile() . '#' . $e->getLine()
-                );
-            }
-
-            if (($to) && ($migration == $to)) {
-                break;
             }
         }
     }
@@ -826,6 +740,7 @@ class MigrationManager
      *
      * @param string $module Module name
      * @param string $to Migration name
+     * @param bool   $scanModuleDirectories Looking for migrations in site root dir
      *
      * @throws \ZFCTool\Exception\IncorrectMigrationNameException
      * @throws \ZFCTool\Exception\ConflictedMigrationException
@@ -835,7 +750,7 @@ class MigrationManager
      * @throws \ZFCTool\Exception\NoMigrationsForExecutionException
      * @throws \ZFCTool\Exception\CurrentMigrationException
      */
-    public function up($module = null, $to = null)
+    public function up($module = null, $to = null, $scanModuleDirectories = false)
     {
         $lastMigration = $this->getLastMigration($module);
         $lastMigration = $lastMigration['migration'];
@@ -852,10 +767,10 @@ class MigrationManager
             }
         }
 
-        $exists = $this->getExistsMigrations($module);
+        $exists = $this->getExistsMigrations($module, $scanModuleDirectories);
         $loaded = $this->getLoadedMigrations($module);
 
-        $ready = array_diff($exists, $loaded);
+        $ready = $this->arrayDiff($exists, $loaded);
 
         if (sizeof($ready) == 0) {
             if ($module) {
@@ -865,69 +780,82 @@ class MigrationManager
             }
         }
 
-        sort($ready);
+        $this->sortArray($ready);
 
-        if (($to) && (!in_array($to, $exists))) {
+        if (($to) && (!$this->valueInArray($to, $exists))) {
             throw new MigrationNotExistsException("Migration `$to` not exists");
         }
 
-        foreach ($ready as $migration) {
-            if ($migration < $lastMigration) {
-                throw new ConflictedMigrationException("Migration `$migration` is conflicted");
-            }
+        $modulePaths = $this->getMigrationsDirectoryPaths($module, $scanModuleDirectories);
 
-            try {
-                $includePath = $this->getMigrationsDirectoryPath($module)
-                    . '/' . $migration . '.php';
+        foreach ($ready as $moduleName => $migrationArray) {
+            foreach ($migrationArray as $migration) {
+                if ($migration < $lastMigration) {
+                    throw new ConflictedMigrationException("Migration `$moduleName`.`$migration` is conflicted");
+                }
 
-                include_once $includePath;
+                try {
+                    if (empty($moduleName)) {
+                        $moduleName = $this->getArrayKey($migration, $exists);
+                    }
 
-                $migrationClass = 'Migration_' . $migration;
-
-                /** @var AbstractMigration $migrationObject */
-                $migrationObject = new $migrationClass($this->db);
-                $migrationObject->setMigrationManager($this);
-
-                if (!$this->transactionFlag) {
-                    $connection = $migrationObject->getDbAdapter()->getDriver()->getConnection();
-                    $connection->beginTransaction();
-                    $this->transactionFlag = true;
-                    try {
-                        $migrationObject->up();
-                        $connection->commit();
-                    } catch (\Exception $e) {
-                        $connection->rollBack();
+                    if (!isset($modulePaths[$moduleName])) {
                         throw new ZFCToolException(
-                            "Migration `$migration` return exception:\n"
-                            . $e->getMessage() . ' in ' . $e->getFile() . '#' . $e->getLine()
+                            "Module `$moduleName` was not found\n"
                         );
                     }
-                    $this->transactionFlag = false;
-                } else {
-                    $migrationObject->up();
+
+                    $includePath = $modulePaths[$moduleName] . '/' . $migration . '.php';
+
+                    include_once $includePath;
+
+                    $migrationClass = 'Migration_' . $migration;
+
+                    /** @var AbstractMigration $migrationObject */
+                    $migrationObject = new $migrationClass($this->db);
+                    $migrationObject->setMigrationManager($this);
+
+                    if (!$this->transactionFlag) {
+                        $connection = $migrationObject->getDbAdapter()->getDriver()->getConnection();
+                        $connection->beginTransaction();
+                        $this->transactionFlag = true;
+                        try {
+                            $migrationObject->up();
+                            $connection->commit();
+                        } catch (\Exception $e) {
+                            $connection->rollBack();
+                            throw new ZFCToolException(
+                                "Migration `$migration` return exception:\n"
+                                . $e->getMessage() . ' in ' . $e->getFile() . '#' . $e->getLine()
+                            );
+                        }
+                        $this->transactionFlag = false;
+                    } else {
+                        $migrationObject->up();
+                    }
+
+                    if ($module) {
+                        $this->addMessage($module . ": upgrade to revision `$migration`");
+                    } else {
+                        $this->addMessage("Upgrade to revision `$migration`");
+                    }
+
+                    $this->pushMigration($moduleName, $migration);
+
+                    // add db state to migration
+                    $this->updateDbState($moduleName, $migration);
+
+
+                } catch (\Exception $e) {
+                    throw new ZFCToolException(
+                        "Migration `$moduleName`.`$migration` return exception:\n"
+                        . $e->getMessage() . ' in ' . $e->getFile() . '#' . $e->getLine()
+                    );
                 }
 
-                if ($module) {
-                    $this->addMessage($module . ": upgrade to revision `$migration`");
-                } else {
-                    $this->addMessage("Upgrade to revision `$migration`");
+                if (($to) && ($migration == $to)) {
+                    break;
                 }
-
-                $this->pushMigration($module, $migration);
-
-                // add db state to migration
-                $this->updateDbState($module, $migration);
-
-
-            } catch (\Exception $e) {
-                throw new ZFCToolException(
-                    "Migration `$migration` return exception:\n"
-                    . $e->getMessage() . ' in ' . $e->getFile() . '#' . $e->getLine()
-                );
-            }
-
-            if (($to) && ($migration == $to)) {
-                break;
             }
         }
     }
@@ -964,66 +892,79 @@ class MigrationManager
      *
      * @param string $module Module name
      * @param int $step Steps to rollback
+     * @param bool $scanModuleDirectories Looking for migrations in site root dir
      * @throws \ZFCTool\Exception\ZFCToolException
      * @throws \ZFCTool\Exception\NoMigrationsForExecutionException
      */
-    public function rollback($module, $step)
+    public function rollback($module, $step, $scanModuleDirectories = false)
     {
         if (!is_numeric($step) || ($step <= 0)) {
             throw new ZFCToolException("Step count `$step` is invalid");
         }
 
-        $exists = $this->getExistsMigrations($module);
+        $exists = $this->getExistsMigrations($module, $scanModuleDirectories);
         $loaded = $this->getLoadedMigrations($module);
 
         if (sizeof($loaded) == 0) {
             throw new NoMigrationsForExecutionException('No migrations to rollback.');
         }
 
-        rsort($loaded);
+        $this->sortArray($loaded, 'DESC');
 
-        foreach ($loaded as $migration) {
+        $modulePaths = $this->getMigrationsDirectoryPaths($module, $scanModuleDirectories);
 
-            if (!in_array($migration, $exists)) {
-                throw new MigrationNotExistsException("Migration `$migration` not exists");
-            }
+        foreach ($loaded as $moduleName => $migrationArray) {
+            foreach ($migrationArray as $migration) {
+                if (!$this->valueInArray($migration, $exists)) {
+                    throw new MigrationNotExistsException("Migration `$moduleName`.`$migration` not exists");
+                }
 
-            try {
-                $includePath = $this->getMigrationsDirectoryPath($module)
-                    . '/' . $migration . '.php';
-
-                include_once $includePath;
-
-                $migrationClass = 'Migration_' . $migration;
-                /** @var AbstractMigration $migrationObject */
-                $migrationObject = new $migrationClass($this->db);
-
-                $connection = $migrationObject->getDbAdapter()->getDriver()->getConnection();
-                $connection->beginTransaction();
                 try {
-                    $migrationObject->down();
-                    $connection->commit();
+                    if (empty($moduleName)) {
+                        $moduleName = $this->getArrayKey($migration, $exists);
+                    }
+
+                    if (!isset($modulePaths[$moduleName])) {
+                        throw new ZFCToolException(
+                            "Module `$moduleName` was not found\n"
+                        );
+                    }
+
+                    $includePath = $modulePaths[$moduleName] . '/' . $migration . '.php';
+
+                    include_once $includePath;
+
+                    $migrationClass = 'Migration_' . $migration;
+                    /** @var AbstractMigration $migrationObject */
+                    $migrationObject = new $migrationClass($this->db);
+
+                    $connection = $migrationObject->getDbAdapter()->getDriver()->getConnection();
+                    $connection->beginTransaction();
+                    try {
+                        $migrationObject->down();
+                        $connection->commit();
+                    } catch (\Exception $e) {
+                        $connection->rollback();
+                        throw new ZFCToolException(
+                            "Migration `$migration` return exception:\n"
+                            . $e->getMessage() . ' in ' . $e->getFile() . '#' . $e->getLine()
+                        );
+                    }
+
+                    $this->addMessage("Degrade migration '$migration'");
+
+                    $this->pullMigration($moduleName, $migration);
                 } catch (\Exception $e) {
-                    $connection->rollback();
                     throw new ZFCToolException(
-                        "Migration `$migration` return exception:\n"
+                        "Migration `$moduleName`.`$migration` return exception:\n"
                         . $e->getMessage() . ' in ' . $e->getFile() . '#' . $e->getLine()
                     );
                 }
 
-                $this->addMessage("Degrade migration '$migration'");
-
-                $this->pullMigration($module, $migration);
-            } catch (\Exception $e) {
-                throw new ZFCToolException(
-                    "Migration `$module`.`$migration` return exception:\n"
-                    . $e->getMessage() . ' in ' . $e->getFile() . '#' . $e->getLine()
-                );
-            }
-
-            $step--;
-            if ($step <= 0) {
-                break;
+                $step--;
+                if ($step <= 0) {
+                    break;
+                }
             }
         }
     }

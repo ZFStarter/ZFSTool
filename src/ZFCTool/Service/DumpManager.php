@@ -13,7 +13,7 @@ use ZFCTool\Exception\ZFCToolException;
 use ZFCTool\Exception\EmptyDumpException;
 use ZFCTool\Exception\DumpNotFound;
 
-class DumpManager
+class DumpManager extends Manager
 {
     /**
      * @var \Zend\Db\Adapter\Adapter
@@ -55,64 +55,6 @@ class DumpManager
         $this->db = $this->serviceLocator->get('Zend\Db\Adapter\Adapter');
     }
 
-
-    /**
-     * Method return application directory path
-     *
-     * @throws ZFCToolException
-     * @return string
-     */
-    public function getProjectDirectoryPath()
-    {
-        if (null == $this->options['projectDirectoryPath']) {
-            throw new ZFCToolException('Project directory path undefined.');
-        }
-
-        return $this->options['projectDirectoryPath'];
-    }
-
-    /**
-     * Method set application directory path
-     *
-     * @param  string $value
-     * @return MigrationManager
-     */
-    public function setProjectDirectoryPath($value)
-    {
-        $this->options['projectDirectoryPath'] = $value;
-        return $this;
-    }
-
-
-    /**
-     * Get modules directory path
-     *
-     * @throws ZFCToolException
-     * @return string
-     */
-    public function getModulesDirectoryPath()
-    {
-        if (null == $this->options['modulesDirectoryPath']) {
-            throw new ZFCToolException('Modules directory path undefined.');
-        }
-
-        return $this->options['modulesDirectoryPath'];
-    }
-
-
-    /**
-     * Set modules directory path
-     *
-     * @param string $value
-     * @return MigrationManager
-     */
-    public function setModulesDirectoryPath($value)
-    {
-        $this->options['modulesDirectoryPath'] = $value;
-        return $this;
-    }
-
-
     /**
      * Get dumps directory name
      *
@@ -149,38 +91,22 @@ class DumpManager
      */
     public function getDumpsDirectoryPath($module = null)
     {
-        if (null == $module) {
-            $path = $this->getProjectDirectoryPath();
-            $path .= '/' . $this->getDumpsDirectoryName();
-        } else {
-            $modulePath = $this->getModulesDirectoryPath() . '/' . $module;
-
-            if (!file_exists($modulePath)) {
-                throw new ZFCToolException('Module `' . $module . '` not exists.');
-            }
-
-            $path = $modulePath . '/' . $this->getDumpsDirectoryName();
-        }
-
-        $this->preparePath($path);
-
-        return $path;
+        return $this->getDirectoryPath($this->getDumpsDirectoryName(), $module);
     }
 
 
     /**
-     * Method prepare path (create not existing dirs)
+     * Method returns path(s) to dump directories
      *
-     * @param string $path
+     * @param null $module Module name
+     * @param bool $scanModuleDirectories Looking for dumps in site root dir
+     * @return array
+     * @throws ZFCToolException
      */
-    protected function preparePath($path)
+    public function getDumpsDirectoryPaths($module = null, $scanModuleDirectories = false)
     {
-        if (!is_dir($path)) {
-            $this->preparePath(dirname($path));
-            mkdir($path, 0777);
-        }
+        return $this->getDirectoryPaths($this->getDumpsDirectoryName(), $module, $scanModuleDirectories);
     }
-
 
     /**
      * Method create dump of database
@@ -198,7 +124,6 @@ class DumpManager
         $database = new Database($this->db, $this->getOptions($whitelist, $blacklist));
 
         if ($dump = $database->getDump()) {
-
             $path = $this->getDumpsDirectoryPath($module);
 
             if (!$name) {
@@ -229,32 +154,12 @@ class DumpManager
         $path = $this->getDumpsDirectoryPath($module);
 
         if (is_file($path . DIRECTORY_SEPARATOR . $name)) {
-
             $dump = file_get_contents($path . DIRECTORY_SEPARATOR . $name);
 
             return $this->db->query($dump, Adapter::QUERY_MODE_EXECUTE);
 
         } else {
             throw new DumpNotFound("Dump file not found!");
-        }
-    }
-
-
-    /**
-     * execute array from string
-     * @param $str
-     * @return array
-     */
-    protected function strToArray($str)
-    {
-        if (!empty($str)) {
-
-            if (strpos($str, ',')) {
-                return explode(',', $str);
-            }
-            return array($str);
-        } else {
-            return array();
         }
     }
 
@@ -286,5 +191,19 @@ class DumpManager
         $options['loaddata'] = true;
 
         return $options;
+    }
+
+    /**
+     * Method returns array of exists in filesystem dump
+     *
+     * @param string $module Module name
+     * @param bool   $scanModuleDirectories Looking for dumps in site root dir
+     * @return array
+     */
+    public function getExistsDumps($module = null, $scanModuleDirectories = false)
+    {
+        $modulePaths = $this->getDumpsDirectoryPaths($module, $scanModuleDirectories);
+
+        return $this->getExistsFiles('sql', $modulePaths);
     }
 }
